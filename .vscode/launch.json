@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "configurations": [
+        {
+            "name": "C++ Launch test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/test.out",
+            "preLaunchTask": "build",
+            "internalConsoleOptions": "openOnSessionStart",
+            "logging": {
+                "moduleLoad": false,
+                "programOutput": true,
+                "trace": false
+            },
+            "showDisplayString": false,
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "externalConsole": false,
+            "osx": {
+                "MIMode": "lldb"
+            }
+        }
+    ]
+}

@@ -1,0 +1,6 @@
+[submodule "src/pugixml"]
+	path = src/pugixml
+	url = https://github.com/zeux/pugixml.git
+[submodule "src/json"]
+	path = src/json
+	url = https://github.com/nlohmann/json.git
