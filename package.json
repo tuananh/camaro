@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@git.goquo.vn:tuananh/node-pugixml.git"
+    "url": "git@github.com:tuananh/camaro.git"
   },
   "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
   "license": "MIT",
