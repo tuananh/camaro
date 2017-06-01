@@ -2,6 +2,8 @@
   "name": "camaro",
   "version": "1.0.0",
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
+  "homepage": "https://github.com/tuananh/camaro",
+  "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,6 +12,14 @@
     "type": "git",
     "url": "git@github.com:tuananh/camaro.git"
   },
+  "keywords": [
+    "xpath",
+    "json",
+    "transform",
+    "pugixml",
+    "xml",
+    "parser"
+  ],
   "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
   "license": "MIT",
   "dependencies": {
