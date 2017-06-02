@@ -1,8 +1,8 @@
 {
   'targets': [{
-    'target_name': 'pugixml',
+    'target_name': 'camaro',
     'sources': [
-      'src/pugixml.cc'
+      'src/camaro.cc'
     ],
     'include_dirs': [
       '<!(node -e "require(\'nan\')")'

@@ -1,12 +1,12 @@
 {
   'targets': [{
-    'target_name': 'pugixml',
+    'target_name': 'camaro',
     'type': 'static_library',
     'sources': [
       'pugixml/src/pugixml.hpp',
       'pugixml/src/pugixml.cpp',
       'json/src/json.hpp',
-      'pugixml.cc'
+      'camaro.cc'
     ],
     'cflags': [
       '-std=c++11',

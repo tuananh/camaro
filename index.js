@@ -1,4 +1,4 @@
-const pugixml = require('bindings')('pugixml.node')
+const camaro = require('bindings')('camaro.node')
 
 function isNonEmptyString(str) {
     return typeof str === 'string' && str.length > 0
@@ -14,7 +14,7 @@ function transform(xml, template) {
     }
 
     const template_string = JSON.stringify(template)
-    let result = pugixml.transform(xml, template_string)
+    let result = camaro.transform(xml, template_string)
     
     if (result) {
         try {
