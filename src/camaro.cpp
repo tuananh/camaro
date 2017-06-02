@@ -1,5 +1,5 @@
 #include <nan.h>
-#include "transform.cc"
+#include "transform.cpp"
 
 void transform(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
@@ -30,4 +30,4 @@ void Init(v8::Local<v8::Object> exports) {
                Nan::New<v8::FunctionTemplate>(transform)->GetFunction());
 }
 
-NODE_MODULE(pugixml, Init)
+NODE_MODULE(camaro, Init)
