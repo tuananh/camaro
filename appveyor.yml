@@ -1,0 +1,25 @@
+environment:
+  matrix:
+    - nodejs_version: "8"
+    - nodejs_version: "7"
+    - nodejs_version: "6"
+
+platform:
+  - x64
+
+install:
+  - ps: Install-Product node $env:nodejs_version $env:platform
+  - npm config set spin false
+  - npm i -g npm@latest
+  - npm install
+
+cache:
+  - '%APPDATA%\npm-cache'
+
+test_script:
+  - npm test
+
+matrix:
+  fast_finish: true
+
+build: off
