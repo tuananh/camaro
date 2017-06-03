@@ -10,7 +10,7 @@ platform:
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - npm config set spin false
-  - npm i -g npm@latest
+  - npm i -g npm node-gyp --production
   - npm install
 
 cache:
