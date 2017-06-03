@@ -15,6 +15,23 @@
 * Work on all major platforms (OS X, Linux and Windows). See Travis CI and AppVeyor build status for details.
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 
+Here are the benchmarks:
+
+```
+camaro x 513 ops/sec ±0.86% (86 runs sampled)
+rapidx2j x 175 ops/sec ±0.91% (79 runs sampled)
+xml2json x 21.61 ops/sec ±0.83% (39 runs sampled)
+xml2js x 21.64 ops/sec ±6.27% (41 runs sampled)
+fast-xml-parser x 87.52 ops/sec ±3.49% (64 runs sampled)
+``` 
+
+* Please note that this is an unfair game for camaro because it only transform what it needs.
+The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
+
+* Benchmark run with Intel Core i5-5257U CPU @ 2.70GHz using Node v7.10.0
+
+* I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
+
 ![intro](intro.png)
 
 ## Installation

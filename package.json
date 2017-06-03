@@ -6,7 +6,8 @@
   "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
   "scripts": {
-    "test": "istanbul test ./node_modules/tape/bin/tape test/*test.js"
+    "test": "istanbul test ./node_modules/tape/bin/tape test/*test.js",
+    "bench": "node benchmark"
   },
   "repository": {
     "type": "git",
@@ -27,7 +28,12 @@
     "nan": "2.6.2"
   },
   "devDependencies": {
-    "istanbul": "^0.4.5",
-    "tape": "^4.6.3"
+    "benchmark": "2.1.4",
+    "fast-xml-parser": "2.4.1",
+    "istanbul": "0.4.5",
+    "rapidx2j": "0.1.1",
+    "tape": "4.6.3",
+    "xml2js": "0.4.17",
+    "xml2json": "0.11.0"
   }
 }
