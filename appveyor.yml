@@ -12,6 +12,10 @@ platform:
   - x86
   - x64
 
+init:
+  - ps: IF ($env:APPVEYOR_REPO_BRANCH -eq "develop") {$env:APPVEYOR_CACHE_SKIP_RESTORE = "true"}
+  - ps: IF ($env:APPVEYOR_REPO_BRANCH -eq "develop") {$env:APPVEYOR_CACHE_SKIP_SAVE = "true"}
+
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - git submodule update --init --recursive
@@ -19,8 +23,8 @@ install:
   - npm i -g npm node-gyp --production
   - npm install
 
-cache:
-  - '%APPDATA%\npm-cache' -> package.json
+# cache:
+#   - '%APPDATA%\npm-cache'
 
 test_script:
   - npm test
