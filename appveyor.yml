@@ -1,4 +1,6 @@
-os:
+version: 1.0.{build}-{branch}
+
+image:
   - Visual Studio 2015
   - Visual Studio 2017
 
@@ -8,13 +10,12 @@ environment:
     - nodejs_version: "7"
     - nodejs_version: "6"
 
+matrix:
+  fast_finish: true
+  
 platform:
   - x86
   - x64
-
-init:
-  - ps: IF ($env:APPVEYOR_REPO_BRANCH -eq "develop") {$env:APPVEYOR_CACHE_SKIP_RESTORE = "true"}
-  - ps: IF ($env:APPVEYOR_REPO_BRANCH -eq "develop") {$env:APPVEYOR_CACHE_SKIP_SAVE = "true"}
 
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
@@ -23,13 +24,10 @@ install:
   - npm i -g npm node-gyp --production
   - npm install
 
-# cache:
-#   - '%APPDATA%\npm-cache'
+cache:
+  - "'%APPDATA%\npm-cache' -> package.json"
 
 test_script:
   - npm test
-
-matrix:
-  fast_finish: true
 
 # build: off
