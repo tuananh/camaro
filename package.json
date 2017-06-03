@@ -28,12 +28,7 @@
     "nan": "2.6.2"
   },
   "devDependencies": {
-    "benchmark": "2.1.4",
-    "fast-xml-parser": "2.4.1",
     "istanbul": "0.4.5",
-    "rapidx2j": "0.1.1",
-    "tape": "4.6.3",
-    "xml2js": "0.4.17",
-    "xml2json": "0.11.0"
+    "tape": "4.6.3"
   }
 }
