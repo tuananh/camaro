@@ -22,4 +22,4 @@ test_script:
 matrix:
   fast_finish: true
 
-build: off
+# build: off
