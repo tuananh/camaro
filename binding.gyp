@@ -15,6 +15,28 @@
       '-Ofast',
       '-flto'
     ],
+    'conditions': [
+      [
+        "OS==\"win\"",
+        {
+          "cflags": [
+            "-Wall"
+          ],
+          "defines": [
+            "WIN"
+          ],
+          "msvs_settings": {
+            "VCCLCompilerTool": {
+              'AdditionalOptions': [
+                '/permissive-',
+                '/std:c++latest',
+                '/utf-8'
+              ]
+            },
+          }
+        }
+      ]
+    ],
     'xcode_settings': {
       'OTHER_CPLUSPLUSFLAGS': [
         '-std=c++11',

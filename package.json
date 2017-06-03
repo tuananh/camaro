@@ -6,7 +6,7 @@
   "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
   "scripts": {
-    "test": "istanbul test tape test/*test.js"
+    "test": "istanbul test ./node_modules/tape/bin/tape test/*test.js"
   },
   "repository": {
     "type": "git",
