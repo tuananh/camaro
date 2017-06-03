@@ -6,7 +6,7 @@
   "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "istanbul test tape test/*test.js"
   },
   "repository": {
     "type": "git",
@@ -25,5 +25,9 @@
   "dependencies": {
     "bindings": "1.2.1",
     "nan": "2.6.2"
+  },
+  "devDependencies": {
+    "istanbul": "^0.4.5",
+    "tape": "^4.6.3"
   }
 }
