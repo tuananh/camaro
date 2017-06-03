@@ -4,12 +4,14 @@
 
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
 
-![Build Status: Linux](https://travis-ci.org/tuananh/camaro.svg?branch=master)
+[![Build Status: Linux](https://travis-ci.org/tuananh/camaro.svg?branch=master)](https://travis-ci.org/tuananh/camaro)
+[![Build Status: Windows](https://ci.appveyor.com/api/projects/status/aa47ov0cahkh7c1d?svg=true)](https://ci.appveyor.com/project/tuananh/camaro)
 
 ## Features
 
 * Transform XML to JSON. Only take properties that you're interested in.
 * Output is a ready to use JS object.
+* Work on all major platforms (OS X, Linux and Windows). See Travis CI and AppVeyor build status for details.
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 
 ![intro](intro.png)
@@ -33,7 +35,7 @@ The rest are pretty much vanilla XPath 1.0.
 
 
 ```js
-const transform = require('../')
+const transform = require('camaro')
 const fs = require('fs')
 
 const xml = fs.readFileSync('ean.xml', 'utf-8')
