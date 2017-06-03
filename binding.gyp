@@ -29,7 +29,6 @@
             "VCCLCompilerTool": {
               'AdditionalOptions': [
                 '/std:c++latest',
-                '/m',
                 '/utf-8'
               ]
             },
