@@ -12,7 +12,7 @@ environment:
 
 matrix:
   fast_finish: true
-  
+
 platform:
   - x86
   - x64
@@ -25,7 +25,7 @@ install:
   - npm install
 
 cache:
-  - "'%APPDATA%\npm-cache' -> package.json"
+  - '%APPDATA%\npm-cache -> **/package.json'
 
 test_script:
   - npm test
