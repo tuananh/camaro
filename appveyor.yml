@@ -26,6 +26,7 @@ install:
 
 cache:
   - '%APPDATA%\npm-cache -> **/package.json'
+  - node_modules -> package.json
 
 test_script:
   - npm test
