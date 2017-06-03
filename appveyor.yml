@@ -10,6 +10,7 @@ platform:
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - git submodule update --init --recursive
+  - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
   - npm config set spin false
   - npm i -g npm node-gyp --production
   - npm install
