@@ -28,8 +28,8 @@
           "msvs_settings": {
             "VCCLCompilerTool": {
               'AdditionalOptions': [
-                '/permissive-',
                 '/std:c++latest',
+                '/m',
                 '/utf-8'
               ]
             },

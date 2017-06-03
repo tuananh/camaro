@@ -19,8 +19,8 @@ install:
   - npm i -g npm node-gyp --production
   - npm install
 
-# cache:
-#   - '%APPDATA%\npm-cache'
+cache:
+  - '%APPDATA%\npm-cache' -> package.json
 
 test_script:
   - npm test
