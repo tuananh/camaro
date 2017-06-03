@@ -9,6 +9,7 @@ platform:
 
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
+  - git submodule update --init --recursive
   - npm config set spin false
   - npm i -g npm node-gyp --production
   - npm install
