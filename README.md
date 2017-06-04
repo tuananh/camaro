@@ -4,6 +4,7 @@
 
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
 
+[![npm version](https://badge.fury.io/js/camaro.svg)](https://badge.fury.io/js/camaro)
 [![Build Status: Linux](https://travis-ci.org/tuananh/camaro.svg?branch=master)](https://travis-ci.org/tuananh/camaro)
 [![Build Status: Windows](https://ci.appveyor.com/api/projects/status/2jqxopf614tvwl7o/branch/master?svg=true)](https://ci.appveyor.com/project/tuananh/camaro)
 
