@@ -7,6 +7,7 @@
 [![npm version](https://badge.fury.io/js/camaro.svg)](https://badge.fury.io/js/camaro)
 [![Build Status: Linux](https://travis-ci.org/tuananh/camaro.svg?branch=master)](https://travis-ci.org/tuananh/camaro)
 [![Build Status: Windows](https://ci.appveyor.com/api/projects/status/2jqxopf614tvwl7o/branch/master?svg=true)](https://ci.appveyor.com/project/tuananh/camaro)
+[![Dependency Status](https://dependencyci.com/github/tuananh/camaro/badge)](https://dependencyci.com/github/tuananh/camaro)
 
 ## Features
 
