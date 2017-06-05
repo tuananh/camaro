@@ -7,6 +7,7 @@
   "main": "index.js",
   "scripts": {
     "test": "istanbul test ./node_modules/tape/bin/tape test/*test.js",
+    "cover": "istanbul cover ./node_modules/tape/bin/tape test/*test.js",
     "bench": "node benchmark"
   },
   "repository": {
