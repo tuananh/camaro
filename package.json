@@ -8,11 +8,14 @@
   "scripts": {
     "test": "istanbul test ./node_modules/tape/bin/tape test/*test.js",
     "cover": "istanbul cover ./node_modules/tape/bin/tape test/*test.js",
-    "bench": "node benchmark"
+    "bench": "node benchmark",
+    "install": "node-pre-gyp install --fallback-to-build",
+    "bench": "node benchmark",
+    "prepublish": "npm ls"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:tuananh/camaro.git"
+    "url": "git://github.com/tuananh/camaro.git"
   },
   "keywords": [
     "xpath",
@@ -26,10 +29,20 @@
   "license": "MIT",
   "dependencies": {
     "bindings": "1.2.1",
-    "nan": "2.6.2"
+    "nan": "2.6.2",
+    "node-pre-gyp": "^0.6.36"
   },
   "devDependencies": {
     "istanbul": "0.4.5",
     "tape": "4.6.3"
+  },
+  "bundledDependencies": [
+    "node-pre-gyp"
+  ],
+  "binary": {
+    "module_name": "camaro",
+    "module_path" : "./lib/binding/",
+    "host": "https://github.com/tuananh/camaro/releases/download/",
+    "remote_path": "{version}"
   }
 }
