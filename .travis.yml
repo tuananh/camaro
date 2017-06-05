@@ -20,7 +20,8 @@ addons:
       - g++-5
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update         ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install gcc@5  ; fi      
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update                         ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm --with-clang      ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export CC=clang; export CXX=clang++ ; fi
 
  
