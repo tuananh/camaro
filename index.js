@@ -6,11 +6,11 @@ function isNonEmptyString(str) {
 
 function transform(xml, template) {
     if (!isNonEmptyString(xml)) {
-        throw new TypeEror('1st argument must be a non-empty string')
+        throw new TypeError('1st argument must be a non-empty string')
     }
 
     if (typeof template !== 'object') {
-        throw new TypeEror('2nd argument must be a template object')
+        throw new TypeError('2nd argument must be a template object')
     }
 
     const template_string = JSON.stringify(template)
