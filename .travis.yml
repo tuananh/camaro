@@ -9,19 +9,10 @@ os:
   - linux
   - osx
 
-env:
-  - CXX=g++-5
-    
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-5
+compiler:
+  - clang
 
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update                         ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm --with-clang      ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export CC=clang; export CXX=clang++ ; fi
+env:
+  - CXX=clang++
 
  
