@@ -46,12 +46,8 @@ string seek_single_string(T& xnode, json& j) {
 template<typename T>
 double seek_single_number(T& xnode, json& j) {
     string path = j;
-    try {
-        xquery query(path.c_str());
-        return query.evaluate_number(xnode);
-    } catch (...) {
-        return -1;
-    }
+    xquery query(path.c_str());
+    return query.evaluate_number(xnode);
 }
 
 template<typename T>
@@ -77,7 +73,11 @@ json seek_array(T& doc, json& node) {
                 string path = inner;
                 string type = get_return_type(path);
                 if (type == "number") {
-                    tmp.push_back(seek_single_number(n, inner));
+                    try {
+                        tmp.push_back(seek_single_number(n, inner));
+                    } catch(...) {
+                        tmp.push_back(NULL);
+                    }
                 }
                 if (type == "string") {
                     tmp.push_back(seek_single_string(n, inner));
@@ -111,7 +111,11 @@ void walk(T& doc, json& n, json& output, string key) {
         string path = n;
         string type = get_return_type(path);
         if (type == "number") {
-            output[key] = seek_single_number(doc, n);
+            try {
+                output[key] = seek_single_number(doc, n);
+            } catch(...) {
+                output[key] = NULL;
+            }
         }
         if (type == "string") {
             output[key] = seek_single_string(doc, n);
