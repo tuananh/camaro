@@ -1,7 +1,7 @@
 const transform = require('../')
 const fs = require('fs')
 
-const xml = fs.readFileSync('ean6mb.xml', 'utf-8')
+const xml = fs.readFileSync(__dirname + '/ean6mb.xml', 'utf-8')
 const template = {
     cache_key: "/HotelListResponse/cacheKey",
     hotels: ["//HotelSummary", {
