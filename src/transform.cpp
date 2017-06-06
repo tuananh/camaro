@@ -20,7 +20,8 @@ string get_return_type(string path) {
         std::regex_match (path, regex("sum(.*)")) ||
         std::regex_match (path, regex("number(.*)")) ||
         std::regex_match (path, regex("ceiling(.*)")) ||
-        std::regex_match (path, regex("floor(.*)"))
+        std::regex_match (path, regex("floor(.*)")) ||
+        std::regex_match (path, regex("round(.*)"))
     ) return "number";
     return "string";
 }
@@ -64,7 +65,7 @@ json seek_array(T& doc, json& node) {
         for (size_t i = 0; i < nodes.size(); ++i) {
             pugi::xpath_node n = nodes[i];
             auto inner = node[1];
-            
+
             if (inner.is_object()) {
                 json obj = json({});
                 for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
@@ -110,10 +111,10 @@ void walk(T& doc, json& n, json& output, string key) {
         string path = n;
         string type = get_return_type(path);
         if (type == "number") {
-            output[key] = seek_single_number(doc, n);    
+            output[key] = seek_single_number(doc, n);
         }
         if (type == "string") {
-            output[key] = seek_single_string(doc, n);    
+            output[key] = seek_single_string(doc, n);
         }
     }
 }
@@ -126,7 +127,7 @@ string transform(string xml, string fmt) {
 
     auto j = json::parse(fmt);
     json result;
-    
+
     for (json::iterator it = j.begin(); it != j.end(); ++it) {
         string key = it.key();
         auto& node = j[key];
