@@ -6,7 +6,6 @@
 
 using json = nlohmann::json;
 using string = std::string;
-using regex = std::regex;
 using xquery = pugi::xpath_query;
 using nodeset = pugi::xpath_node_set;
 
