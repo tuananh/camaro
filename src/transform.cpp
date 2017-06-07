@@ -1,7 +1,5 @@
 #include <string>
 #include <iostream>
-#include <ctime>
-#include <regex>
 #include "pugixml/src/pugixml.hpp"
 #include "pugixml/src/pugixml.cpp"
 #include "json/src/json.hpp"
@@ -15,13 +13,17 @@ using nodeset = pugi::xpath_node_set;
 template<typename T>
 void walk(T& doc, json& n, json& output, string key);
 
-string get_return_type(string path) {
-    if (std::regex_match (path, regex("count(.*)")) ||
-        std::regex_match (path, regex("sum(.*)")) ||
-        std::regex_match (path, regex("number(.*)")) ||
-        std::regex_match (path, regex("ceiling(.*)")) ||
-        std::regex_match (path, regex("floor(.*)")) ||
-        std::regex_match (path, regex("round(.*)"))
+bool string_contains(string to_check, string prefix) {
+    return std::mismatch(prefix.begin(), prefix.end(), to_check.begin()).first == prefix.end();
+}
+
+string get_return_type(string& path) {
+    if (string_contains(path, "count(") ||
+        string_contains(path, "sum(") ||
+        string_contains(path, "number(") ||
+        string_contains(path, "ceiling(") ||
+        string_contains(path, "floor(") ||
+        string_contains(path, "round(")
     ) return "number";
     return "string";
 }
