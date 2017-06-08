@@ -13,9 +13,9 @@ using nodeset = pugi::xpath_node_set;
 template<typename T>
 void walk(T& doc, json& n, json& output, string key);
 
-const string NUMBER = "number";
-const string STRING = "string";
-const string BOOLEAN = "boolean";
+const string T_NUMBER = "number";
+const string T_STRING = "string";
+const string T_BOOLEAN = "boolean";
 
 inline bool string_contains(string to_check, string prefix) {
     return to_check.size() >= prefix.size() && to_check.compare(0, prefix.size(), prefix) == 0;
@@ -28,10 +28,10 @@ inline string get_return_type(string& path) {
         string_contains(path, "ceiling(") ||
         string_contains(path, "floor(") ||
         string_contains(path, "round(")
-    ) return NUMBER;
+    ) return T_NUMBER;
 
-    if (string_contains(path, "boolean(")) return BOOLEAN;
-    return STRING;
+    if (string_contains(path, "boolean(")) return T_BOOLEAN;
+    return T_STRING;
 }
 
 template<typename T>
@@ -82,13 +82,13 @@ json seek_array(T& doc, json& node) {
         } else if (inner.is_string()) {
             string path = inner;
             string type = get_return_type(path);
-            if (type == NUMBER) {
+            if (type == T_NUMBER) {
                 tmp.push_back(seek_single_number(n, inner));
             }
-            if (type == STRING) {
+            if (type == T_STRING) {
                 tmp.push_back(seek_single_string(n, inner));
             }
-            if (type == BOOLEAN) {
+            if (type == T_BOOLEAN) {
                 tmp.push_back(seek_single_boolean(n, inner));
             }
         }
@@ -116,13 +116,13 @@ void walk(T& doc, json& n, json& output, string key) {
     } else if (n.is_string()) {
         string path = n;
         string type = get_return_type(path);
-        if (type == NUMBER) {
+        if (type == T_NUMBER) {
             output[key] = seek_single_number(doc, n);
         }
-        if (type == STRING) {
+        if (type == T_STRING) {
             output[key] = seek_single_string(doc, n);
         }
-        if (type == BOOLEAN) {
+        if (type == T_BOOLEAN) {
             output[key] = seek_single_boolean(doc, n);
         }
     }
