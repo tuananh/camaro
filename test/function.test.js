@@ -10,7 +10,7 @@ const xml = `
 `
 test('test function round()', (t) => {
     const result = transform(xml, { round: 'round(root/single)' })
-    console.log(result)
+    t.equal(result.round, 20)
     t.end()
 })
 
