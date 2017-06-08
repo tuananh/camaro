@@ -1,6 +1,6 @@
 # camaro
 
-[![NPM](https://nodei.co/npm/camaro.png)](https://npmjs.org/package/camaro)
+[![NPM](https://nodei.co/npm/camaro.png?downloads=true)](https://npmjs.org/package/camaro)
 
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
 
@@ -8,6 +8,7 @@
 [![Build Status: Linux](https://travis-ci.org/tuananh/camaro.svg?branch=master)](https://travis-ci.org/tuananh/camaro)
 [![Build Status: Windows](https://ci.appveyor.com/api/projects/status/2jqxopf614tvwl7o/branch/master?svg=true)](https://ci.appveyor.com/project/tuananh/camaro)
 [![Dependency Status](https://dependencyci.com/github/tuananh/camaro/badge)](https://dependencyci.com/github/tuananh/camaro)
+[![Greenkeeper badge](https://badges.greenkeeper.io/tuananh/camaro.svg)](https://greenkeeper.io/)
 
 ## Features
 
@@ -24,7 +25,7 @@ rapidx2j x 175 ops/sec ±0.91% (79 runs sampled)
 xml2json x 21.61 ops/sec ±0.83% (39 runs sampled)
 xml2js x 21.64 ops/sec ±6.27% (41 runs sampled)
 fast-xml-parser x 87.52 ops/sec ±3.49% (64 runs sampled)
-``` 
+```
 
 * Please note that this is an unfair game for camaro because it only transform what it needs.
 The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
