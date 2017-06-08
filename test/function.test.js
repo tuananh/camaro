@@ -6,6 +6,7 @@ const xml = `
         <single>20.1</single>
         <number>10.2</number>
         <number>20.3</number>
+        <boolean>TrUe</boolean>
     </root>
 `
 test('test function round()', (t) => {
@@ -35,5 +36,15 @@ test('test function sum()', (t) => {
 test('test function count()', (t) => {
     const result = transform(xml, { count: 'count(root/number)' })
     t.equal(result.count, 2)
+    t.end()
+})
+
+test('test function boolean()', (t) => {
+    const result = transform(xml, {
+        boolean: 'boolean(root/boolean = "TrUe")',
+        boolean_false: 'boolean(root/boolean = "true")'
+    })
+    t.equal(result.boolean, true, 'boolean should be true')
+    t.equal(result.boolean_false, false, 'boolean_flase should be false')
     t.end()
 })

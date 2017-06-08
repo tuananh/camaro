@@ -15,6 +15,7 @@ void walk(T& doc, json& n, json& output, string key);
 
 const string NUMBER = "number";
 const string STRING = "string";
+const string BOOLEAN = "boolean";
 
 inline bool string_contains(string to_check, string prefix) {
     return to_check.size() >= prefix.size() && to_check.compare(0, prefix.size(), prefix) == 0;
@@ -28,7 +29,16 @@ inline string get_return_type(string& path) {
         string_contains(path, "floor(") ||
         string_contains(path, "round(")
     ) return NUMBER;
+
+    if (string_contains(path, "boolean(")) return BOOLEAN;
     return STRING;
+}
+
+template<typename T>
+bool seek_single_boolean(T& xnode, json& j) {
+    string path = j;
+    xquery query(path.c_str());
+    return query.evaluate_boolean(xnode);
 }
 
 template<typename T>
@@ -78,6 +88,9 @@ json seek_array(T& doc, json& node) {
             if (type == STRING) {
                 tmp.push_back(seek_single_string(n, inner));
             }
+            if (type == BOOLEAN) {
+                tmp.push_back(seek_single_boolean(n, inner));
+            }
         }
     }
 
@@ -108,6 +121,9 @@ void walk(T& doc, json& n, json& output, string key) {
         }
         if (type == STRING) {
             output[key] = seek_single_string(doc, n);
+        }
+        if (type == BOOLEAN) {
+            output[key] = seek_single_boolean(doc, n);
         }
     }
 }
