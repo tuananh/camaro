@@ -1,5 +1,7 @@
 # camaro
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/tuananh/camaro.svg)](https://greenkeeper.io/)
+
 [![NPM](https://nodei.co/npm/camaro.png)](https://npmjs.org/package/camaro)
 
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
