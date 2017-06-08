@@ -1,7 +1,8 @@
+#define PUGIXML_NO_EXCEPTIONS
+#define PUGIXML_HEADER_ONLY
+
 #include <string>
-#include <iostream>
 #include "pugixml/src/pugixml.hpp"
-#include "pugixml/src/pugixml.cpp"
 #include "json/src/json.hpp"
 
 using json = nlohmann::json;
@@ -12,35 +13,34 @@ using nodeset = pugi::xpath_node_set;
 template<typename T>
 void walk(T& doc, json& n, json& output, string key);
 
-bool string_contains(string to_check, string prefix) {
-    return std::mismatch(prefix.begin(), prefix.end(), to_check.begin()).first == prefix.end();
+const string NUMBER = "number";
+const string STRING = "string";
+
+inline bool string_contains(string to_check, string prefix) {
+    return to_check.size() >= prefix.size() && to_check.compare(0, prefix.size(), prefix) == 0;
 }
 
-string get_return_type(string& path) {
+inline string get_return_type(string& path) {
     if (string_contains(path, "count(") ||
         string_contains(path, "sum(") ||
         string_contains(path, "number(") ||
         string_contains(path, "ceiling(") ||
         string_contains(path, "floor(") ||
         string_contains(path, "round(")
-    ) return "number";
-    return "string";
+    ) return NUMBER;
+    return STRING;
 }
 
 template<typename T>
 string seek_single_string(T& xnode, json& j) {
     string path = j;
-    try {
-        if (path.empty()) {
-            return "";
-        } else if (path.find("#") != std::string::npos) {
-            return path.substr(1, path.size());
-        } else {
-            xquery query(path.c_str());
-            return query.evaluate_string(xnode);
-        }
-    } catch (...) {
+    if (path.empty()) {
         return "";
+    } else if (path.find("#") != std::string::npos) {
+        return path.substr(1, path.size());
+    } else {
+        xquery query(path.c_str());
+        return query.evaluate_string(xnode);
     }
 }
 
@@ -53,43 +53,35 @@ double seek_single_number(T& xnode, json& j) {
 
 template<typename T>
 json seek_array(T& doc, json& node) {
-    try {
-        string base_path = node[0];
-        xquery q(base_path.c_str());
-        pugi::xpath_node_set nodes = q.evaluate_node_set(doc);
-        json tmp = json::array();
+    string base_path = node[0];
+    xquery q(base_path.c_str());
+    pugi::xpath_node_set nodes = q.evaluate_node_set(doc);
+    json tmp = json::array();
 
-        for (size_t i = 0; i < nodes.size(); ++i) {
-            pugi::xpath_node n = nodes[i];
-            auto inner = node[1];
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        pugi::xpath_node n = nodes[i];
+        auto inner = node[1];
 
-            if (inner.is_object()) {
-                json obj = json({});
-                for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
-                    walk(n, it.value(), obj, it.key());
-                }
+        if (inner.is_object()) {
+            json obj = json({});
+            for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
+                walk(n, it.value(), obj, it.key());
+            }
 
-                tmp.push_back(obj);
-            } else if (inner.is_string()) {
-                string path = inner;
-                string type = get_return_type(path);
-                if (type == "number") {
-                    try {
-                        tmp.push_back(seek_single_number(n, inner));
-                    } catch(...) {
-                        tmp.push_back(NULL);
-                    }
-                }
-                if (type == "string") {
-                    tmp.push_back(seek_single_string(n, inner));
-                }
+            tmp.push_back(obj);
+        } else if (inner.is_string()) {
+            string path = inner;
+            string type = get_return_type(path);
+            if (type == NUMBER) {
+                tmp.push_back(seek_single_number(n, inner));
+            }
+            if (type == STRING) {
+                tmp.push_back(seek_single_string(n, inner));
             }
         }
-
-        return tmp;
-    } catch (...) {
-        return json::array();
     }
+
+    return tmp;
 }
 
 template<typename T>
@@ -111,14 +103,10 @@ void walk(T& doc, json& n, json& output, string key) {
     } else if (n.is_string()) {
         string path = n;
         string type = get_return_type(path);
-        if (type == "number") {
-            try {
-                output[key] = seek_single_number(doc, n);
-            } catch(...) {
-                output[key] = NULL;
-            }
+        if (type == NUMBER) {
+            output[key] = seek_single_number(doc, n);
         }
-        if (type == "string") {
+        if (type == STRING) {
             output[key] = seek_single_string(doc, n);
         }
     }
