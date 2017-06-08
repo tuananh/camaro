@@ -20,8 +20,11 @@ test('basic test', (t) => {
             }]
         }],
         session_id: '/HotelListResponse/customerSessionId',
-        non_existen_path: '/HotelListResponse/nonExistenPath',
-        non_existen_path_number: 'number(/HotelListResponse/nonExistenPath)'
+        path_not_exist: '/HotelListResponse/nonExistenPath',
+        number_path_not_exist: 'number(/HotelListResponse/nonExistenPath)',
+        round_path_not_exist: 'round(/HotelListResponse/nonExistenPath)',
+        number_path_exist: 'number(/HotelListResponse/numberOfRoomsRequested)',
+        number_path_exist_but_invalid: 'number(/HotelListResponse/customerSessionId)'
     }
 
     const result = transform(xml, template)
@@ -29,8 +32,11 @@ test('basic test', (t) => {
     t.equal(result.cache_key, '-48a4e19f:15bec159775:50eb', 'parse cache_key ok')
     t.equal(result.session_id, 'yuvb3jdpifp2t13y43pass2p', 'parse session_id ok')
     t.equal(Array.isArray(result.hotels), true, 'result.hotels is expected to be array')
-    t.equal(result.non_existen_path, "", 'non_existen_path should be empty string')
-    t.equal(result.non_existen_path_number, null, 'non_existen_path_number should be null')
+    t.equal(result.path_not_exist, "", 'path_not_exist should be empty string')
+    t.equal(result.number_path_not_exist, null, 'number_path_not_exist should be null')
+    t.equal(result.round_path_not_exist, null, 'round_path_not_exist should be null')
+    t.equal(result.number_path_exist, 1, 'number_path_exist should be 1')
+    t.equal(result.number_path_exist_but_invalid, null, 'number_path_exist_but_invalid should be null')
 
     result.hotels.forEach(h => {
         t.test(`checking node [hotel_id= ${h.hotel_id}]`, function(tt) {
