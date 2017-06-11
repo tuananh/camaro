@@ -1,13 +1,21 @@
 language: node_js
 node_js:
-  - "6"
-  - "7"
-  - "8"
+- '6'
+- '7'
+- '8'
 env:
-  - CXX=g++-5
+- CXX=g++-5
 addons:
   apt:
     sources:
-      - ubuntu-toolchain-r-test
+    - ubuntu-toolchain-r-test
     packages:
-      - g++-5
+    - g++-5
+
+script:
+  - npm test
+  - if [[ $TRAVIS_TAG ]] ||
+       [[ `git show -s --format=%B $TRAVIS_COMMIT` == *'[publish binary]'* ]];
+    then
+      $RUN node_modules/.bin/node-pre-gyp package publish;
+    fi
