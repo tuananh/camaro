@@ -10,7 +10,6 @@
     "cover": "istanbul cover ./node_modules/tape/bin/tape test/*test.js",
     "bench": "node benchmark",
     "install": "node-pre-gyp install --fallback-to-build",
-    "bench": "node benchmark",
     "prepublish": "npm ls"
   },
   "repository": {
@@ -41,7 +40,7 @@
   ],
   "binary": {
     "module_name": "camaro",
-    "module_path" : "./lib/binding/",
+    "module_path": "./lib/binding/",
     "host": "https://github.com/tuananh/camaro/releases/download/",
     "remote_path": "{version}"
   }
