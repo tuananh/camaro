@@ -102,5 +102,6 @@ typings/
 # dotenv environment variables file
 .env
 
-
+# node-pre-gyp
+lib/binding
 # End of https://www.gitignore.io/api/node,macos,linux

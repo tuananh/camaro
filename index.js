@@ -1,4 +1,7 @@
-const camaro = require('bindings')('camaro.node')
+const binary = require('node-pre-gyp')
+const path = require('path')
+const bindingPath = binary.find(path.resolve(path.join(__dirname,'./package.json')))
+const camaro = require(bindingPath)
 
 function isNonEmptyString(str) {
     return typeof str === 'string' && str.length > 0
@@ -15,7 +18,7 @@ function transform(xml, template) {
 
     const template_string = JSON.stringify(template)
     let result = camaro.transform(xml, template_string)
-    
+
     if (result) {
         try {
             result = JSON.parse(result)
