@@ -1,18 +1,13 @@
 language: node_js
-
 node_js:
   - "6"
   - "7"
   - "8"
-
-os:
-  - linux
-  - osx
-
-compiler:
-  - clang
-
 env:
-  - CXX=clang++
-
- 
+  - CXX=g++-5
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-5
