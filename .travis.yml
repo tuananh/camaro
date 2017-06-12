@@ -14,10 +14,10 @@ addons:
 
 script:
   - npm test
-  - if [[ $TRAVIS_TAG ]] ||
-       [[ `git show -s --format=%B $TRAVIS_COMMIT` == *'[publish binary]'* ]];
-    then
-      $RUN npm install -g node-pre-gyp-github;
-      $RUN node_modules/.bin/node-pre-gyp package;
-      $RUN node-pre-gyp-github publish --release;
-    fi
+  # - if [[ $TRAVIS_TAG ]] ||
+  #      [[ `git show -s --format=%B $TRAVIS_COMMIT` == *'[publish binary]'* ]];
+  #   then
+  #     $RUN npm install -g node-pre-gyp-github;
+  #     $RUN node_modules/.bin/node-pre-gyp package;
+  #     $RUN node-pre-gyp-github publish --release;
+  #   fi
