@@ -4,7 +4,7 @@ node_js:
 - '7'
 - '8'
 env:
-- CXX=g++-5
+- CXX=g++-4.9
 addons:
   apt:
     sources:
