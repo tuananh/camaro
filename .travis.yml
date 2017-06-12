@@ -10,7 +10,7 @@ addons:
     sources:
     - ubuntu-toolchain-r-test
     packages:
-    - g++-5
+    - g++-4.9
 
 script:
   - npm test
