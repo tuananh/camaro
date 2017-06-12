@@ -1,8 +1,8 @@
 const fs = require('fs')
-const test = require('tape')
+const t = require('tap')
 const transform = require('../')
 
-test('basic test', (t) => {
+t.test('basic test', (t) => {
     const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
     const template = {
         cache_key: '/HotelListResponse/cacheKey',

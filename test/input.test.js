@@ -1,7 +1,7 @@
-const test = require('tape')
+const t = require('tap')
 const transform = require('../')
 
-test('test invalid xml string', (t) => {
+t.test('test invalid xml string', (t) => {
     try {
         const result = transform('', {})
     } catch(err) {
@@ -11,7 +11,7 @@ test('test invalid xml string', (t) => {
     t.end()
 })
 
-test('test invalid template argument', (t) => {
+t.test('test invalid template argument', (t) => {
     try {
         const result = transform('<xml/>', null)
     } catch(err) {

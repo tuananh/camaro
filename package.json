@@ -6,8 +6,8 @@
   "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
   "scripts": {
-    "test": "istanbul test ./node_modules/tape/bin/tape test/*test.js",
-    "cover": "istanbul cover ./node_modules/tape/bin/tape test/*test.js",
+    "test": "istanbul test ./node_modules/.bin/tap test/*test.js",
+    "cover": "istanbul cover ./node_modules/.bin/tap test/*test.js",
     "bench": "node benchmark",
     "install": "node-pre-gyp install --fallback-to-build",
     "prepublish": "npm ls"
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "istanbul": "0.4.5",
-    "tape": "4.6.3"
+    "tap": "^10.3.3"
   },
   "bundledDependencies": [
     "node-pre-gyp"
