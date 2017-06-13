@@ -1,4 +1,4 @@
-const t = require('tap')
+const t = require('tape')
 const transform = require('../')
 
 const xml = `
