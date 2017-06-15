@@ -3,7 +3,7 @@
 
 #include <string>
 #include "pugixml/src/pugixml.hpp"
-#include "json/src/json.hpp"
+#include "json/json.hpp"
 
 using json = nlohmann::json;
 using string = std::string;
