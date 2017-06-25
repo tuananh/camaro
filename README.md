@@ -67,7 +67,7 @@ const template = {
         rooms: ['RoomRateDetailsList/RoomRateDetails', {
             rates: ['RateInfos/RateInfo', {
                 currency: 'ChargeableRateInfo/@currencyCode',
-                non_refundable: 'boolean(nonRefundable == "true")',
+                non_refundable: 'boolean(nonRefundable = "true")',
                 price: 'number(ChargeableRateInfo/@total)'
             }],
             room_name: 'roomDescription',
