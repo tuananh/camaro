@@ -20,8 +20,8 @@ t.test('basic test', (t) => {
             }]
         }],
         session_id: '/HotelListResponse/customerSessionId',
-        path_not_exist: '/HotelListResponse/nonExistenPath'
-        // empty_array: []
+        path_not_exist: '/HotelListResponse/nonExistenPath',
+        empty_array: []
     }
 
     const result = transform(xml, template)
@@ -30,7 +30,7 @@ t.test('basic test', (t) => {
     t.equal(result.session_id, 'yuvb3jdpifp2t13y43pass2p', 'parse session_id ok')
     t.equal(Array.isArray(result.hotels), true, 'result.hotels is expected to be array')
     t.equal(result.path_not_exist, "", 'path_not_exist should be empty string')
-    // t.ok(result.empty_array && Array.isArray(result.empty_array), 'empty_array should be an empty array')
+    t.ok(result.empty_array && Array.isArray(result.empty_array), 'empty_array should be an empty array')
 
     result.hotels.forEach(h => {
         t.test(`checking node [hotel_id= ${h.hotel_id}]`, function(tt) {
