@@ -4,7 +4,6 @@
 #include <string>
 #include "pugixml/src/pugixml.hpp"
 #include "json/json.hpp"
-#include <iostream>
 
 using json = nlohmann::json;
 using string = std::string;
@@ -116,7 +115,6 @@ json seek_object(T& doc, json& node) {
 template<typename T>
 void walk(T& doc, json& n, json& output, string key) {
     if (n.is_array() ) {
-        std::cout << "handling array key=" << key << " " << n.empty() << std::endl;
         output[key] = seek_array(doc, n);
     } else if (n.is_object()) {
         output[key] = seek_object(doc, n);
