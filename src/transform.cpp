@@ -4,6 +4,7 @@
 #include <string>
 #include "pugixml/src/pugixml.hpp"
 #include "json/json.hpp"
+#include <iostream>
 
 using json = nlohmann::json;
 using string = std::string;
@@ -63,6 +64,11 @@ double seek_single_number(T& xnode, json& j) {
 
 template<typename T>
 json seek_array(T& doc, json& node) {
+    // a special case for backward compatible with xpath-object-transform
+    if (node.empty()) {
+        return json::array();
+    }
+
     string base_path = node[0];
     xquery q(base_path.c_str());
     pugi::xpath_node_set nodes = q.evaluate_node_set(doc);
@@ -110,6 +116,7 @@ json seek_object(T& doc, json& node) {
 template<typename T>
 void walk(T& doc, json& n, json& output, string key) {
     if (n.is_array() ) {
+        std::cout << "handling array key=" << key << " " << n.empty() << std::endl;
         output[key] = seek_array(doc, n);
     } else if (n.is_object()) {
         output[key] = seek_object(doc, n);
