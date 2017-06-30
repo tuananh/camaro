@@ -2,7 +2,7 @@ version: 1.0.{build}-{branch}
 
 image:
   - Visual Studio 2015
-  - Visual Studio 2017
+  # - Visual Studio 2017
 
 artifacts:
   - path: build\**\*.tar.gz
@@ -48,5 +48,5 @@ deploy:
     auth_token: $(github_release_token)
     draft: true
     prerelease: false
-    # on:
-    #   appveyor_repo_tag: true
+    on:
+      appveyor_repo_tag: true
