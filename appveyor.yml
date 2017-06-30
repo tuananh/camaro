@@ -44,5 +44,5 @@ deploy:
     auth_token: $(github_release_token)
     draft: false
     prerelease: false
-    on:
-      appveyor_repo_tag: true
+    # on:
+    #   appveyor_repo_tag: true
