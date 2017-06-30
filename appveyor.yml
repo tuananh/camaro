@@ -5,6 +5,8 @@ image:
   - Visual Studio 2017
 
 environment:
+  github_release_token:
+    secure: PbRZg8hVpAS5WWNZYY461xJOOgZLaDIR8QGM5fX+o11JCLoR+ccdwkbBHldTBcBx
   matrix:
     - nodejs_version: "8"
     - nodejs_version: "7"
@@ -22,7 +24,7 @@ install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - git submodule update --init --recursive
   - npm config set spin false
-  - npm i -g npm node-gyp --production
+  - npm i -g npm node-pre-gyp --production
   - npm install
 
 build:
@@ -32,11 +34,14 @@ build:
 test_script:
   - npm test
 
+after_test:
+  - node-pre-gyp package 2>&1
+
 deploy:
   - provider: GitHub
-    release: $(APPVEYOR_REPO_TAG_NAME)
+    release: camaro-v$(appveyor_build_version)
     artifact: camaro
-    auth_token: $(NODE_PRE_GYP_GITHUB_TOKEN)
+    auth_token: $(github_release_token)
     draft: false
     prerelease: false
     on:
