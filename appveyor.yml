@@ -4,6 +4,10 @@ image:
   - Visual Studio 2015
   - Visual Studio 2017
 
+artifacts:
+  - path: build\**\*.tar.gz
+    name: camaro
+
 environment:
   github_release_token:
     secure: PbRZg8hVpAS5WWNZYY461xJOOgZLaDIR8QGM5fX+o11JCLoR+ccdwkbBHldTBcBx
@@ -39,7 +43,7 @@ after_test:
 
 deploy:
   - provider: GitHub
-    release: camaro-v$(appveyor_build_version)
+    release: $(APPVEYOR_REPO_TAG_NAME)
     artifact: camaro
     auth_token: $(github_release_token)
     draft: false
