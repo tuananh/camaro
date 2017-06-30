@@ -31,3 +31,13 @@ build:
 
 test_script:
   - npm test
+
+deploy:
+  - provider: GitHub
+    release: $(APPVEYOR_REPO_TAG_NAME)
+    artifact: camaro
+    auth_token: $(NODE_PRE_GYP_GITHUB_TOKEN)
+    draft: false
+    prerelease: false
+    on:
+      appveyor_repo_tag: true
