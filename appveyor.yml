@@ -46,7 +46,7 @@ deploy:
     release: $(APPVEYOR_REPO_TAG_NAME)
     artifact: camaro
     auth_token: $(github_release_token)
-    draft: false
+    draft: true
     prerelease: false
     # on:
     #   appveyor_repo_tag: true
