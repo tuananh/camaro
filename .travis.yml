@@ -1,17 +1,26 @@
 language: node_js
+os:
+  - linux
+  - osx
 node_js:
-- '6'
-- '7'
-- '8'
+  - '6'
+  - '7'
+  - '8'
 env:
-- CXX=g++-4.9
+  - CXX=g++-4.9
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test
+      - ubuntu-toolchain-r-test
     packages:
-    - g++-4.9
-
+      - g++-4.9
+before_install:
+  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then export CXX=clang++; fi
+  - $CXX --version
+  - echo $TRAVIS_BRANCH
+  - echo `git describe --tags --always HEAD`
+  - npm config set progress false
+  - npm config set spin false
 script:
   - npm test
   - if [[ $TRAVIS_TAG ]] ||
