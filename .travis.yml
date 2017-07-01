@@ -15,7 +15,7 @@ addons:
     packages:
     - g++-4.9
 before_install:
-- if [[ $TRAVIS_OS_NAME == "osx" ]]; then export CXX=clang; fi
+- if [[ $TRAVIS_OS_NAME == "osx" ]]; then export CXX=clang++; fi
 - $CXX --version
 - echo $TRAVIS_BRANCH
 - echo `git describe --tags --always HEAD`
