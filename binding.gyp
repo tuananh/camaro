@@ -39,12 +39,15 @@
     'xcode_settings': {
       'OTHER_CPLUSPLUSFLAGS': [
         '-std=c++11',
+        '-stdlib=libc++',
         '-fexceptions',
         '-Wall',
         '-march=native',
         '-Ofast'
       ],
-
+      'OTHER_LDFLAGS':[
+        '-stdlib=libc++'
+      ]
     }
   }, {
     "target_name": "action_after_build",
