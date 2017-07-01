@@ -15,9 +15,7 @@ addons:
     packages:
       - g++-4.9
 before_install:
-  - brew update
-  - brew install gcc@4.9
-  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then export CXX=g++-4.9; fi
+  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then brew update; brew install gcc@4.9; export CXX=g++-4.9; fi
   - $CXX --version
   - echo $TRAVIS_BRANCH
   - echo `git describe --tags --always HEAD`
