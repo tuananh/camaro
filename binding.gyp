@@ -37,7 +37,6 @@
       ]
     ],
     'xcode_settings': {
-      'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
       'OTHER_CPLUSPLUSFLAGS': [
         '-std=c++11',
         '-fexceptions',
