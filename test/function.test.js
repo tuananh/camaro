@@ -7,7 +7,7 @@ const xml = `
         <number>10.2</number>
         <number>20.3</number>
         <boolean>TrUe</boolean>
-        <string>Hello world</string>
+        <string>HELLo WorLD</string>
     </root>
 `
 
@@ -66,6 +66,6 @@ t.test('test function boolean()', (t) => {
         boolean_false: 'boolean(root/boolean = "true")'
     })
     t.equal(result.boolean, true, 'boolean should be true')
-    t.equal(result.boolean_false, false, 'boolean_flase should be false')
+    t.equal(result.boolean_false, false, 'boolean_false should be false')
     t.end()
 })
