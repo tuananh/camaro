@@ -7,25 +7,38 @@ const xml = `
         <number>10.2</number>
         <number>20.3</number>
         <boolean>TrUe</boolean>
-        <string>HELLo WorLD</string>
+        <string>HELLO WORLD</string>
+        <string2>Room Superior</string2>
     </root>
 `
 
 t.test('test function upper-case()', (t) => {
-    const result = transform(xml, { upperCase: 'upper-case(root/string)' })
+    const result = transform(xml, {
+        upperCase: 'upper-case(root/string)',
+        upperCase2: 'upper-case(root/string2)'
+    })
     t.equal(result.upperCase, 'HELLO WORLD')
+    t.equal(result.upperCase2, 'ROOM SUPERIOR')
     t.end()
 })
 
 t.test('test function lower-case()', (t) => {
-    const result = transform(xml, { lowerCase: 'lower-case(root/string)' })
+    const result = transform(xml, {
+        lowerCase: 'lower-case(root/string)',
+        lowerCase2: 'lower-case(root/string2)'
+    })
     t.equal(result.lowerCase, 'hello world')
+    t.equal(result.lowerCase2, 'room superior')
     t.end()
 })
 
 t.test('test function title-case()', (t) => {
-    const result = transform(xml, { titleCase: 'title-case(root/string)' })
+    const result = transform(xml, {
+        titleCase: 'title-case(root/string)',
+        titleCase2: 'title-case(root/string2)'
+    })
     t.equal(result.titleCase, 'Hello World')
+    t.equal(result.titleCase2, 'Room Superior')
     t.end()
 })
 
