@@ -4,6 +4,7 @@
 #include <string>
 #include "pugixml/src/pugixml.hpp"
 #include "json/json.hpp"
+#include "string.cpp"
 
 using json = nlohmann::json;
 using string = std::string;
@@ -49,6 +50,31 @@ string seek_single_string(T& xnode, json& j) {
     } else if (path.find("#") != std::string::npos) {
         return path.substr(1, path.size());
     } else {
+        string actual_path;
+        if (string_contains(path, "title-case(")) {
+            actual_path = path.substr(11, path.length() - 12);
+            xquery query(actual_path.c_str());
+            string output = query.evaluate_string(xnode);
+            title_case(output);
+            return output;
+        }
+
+        if (string_contains(path, "lower-case(")) {
+            actual_path = path.substr(11, path.length() - 12);
+            xquery query(actual_path.c_str());
+            string output = query.evaluate_string(xnode);
+            lower(output);
+            return output;
+        }
+
+        if (string_contains(path, "upper-case(")) {
+            actual_path = path.substr(11, path.length() - 12);
+            xquery query(actual_path.c_str());
+            string output = query.evaluate_string(xnode);
+            upper(output);
+            return output;
+        }
+
         xquery query(path.c_str());
         return query.evaluate_string(xnode);
     }
