@@ -7,38 +7,41 @@ const xml = `
         <number>10.2</number>
         <number>20.3</number>
         <boolean>TrUe</boolean>
-        <string>HELLO WORLD</string>
-        <string2>Room Superior</string2>
+        <items>
+            <item>hEllo WorlD</item>
+            <item>Hello World</item>
+            <item>hello wOrld</item>
+        </items>
     </root>
 `
 
 t.test('test function upper-case()', (t) => {
     const result = transform(xml, {
-        upperCase: 'upper-case(root/string)',
-        upperCase2: 'upper-case(root/string2)'
+        upperCase: ['//items/item', 'upper-case(.)']
     })
-    t.equal(result.upperCase, 'HELLO WORLD')
-    t.equal(result.upperCase2, 'ROOM SUPERIOR')
+    result.upperCase.forEach(u => {
+        t.equal(u, 'HELLO WORLD')
+    })
     t.end()
 })
 
 t.test('test function lower-case()', (t) => {
     const result = transform(xml, {
-        lowerCase: 'lower-case(root/string)',
-        lowerCase2: 'lower-case(root/string2)'
+        lowerCase: ['//items/item', 'lower-case(.)']
     })
-    t.equal(result.lowerCase, 'hello world')
-    t.equal(result.lowerCase2, 'room superior')
+    result.lowerCase.forEach(u => {
+        t.equal(u, 'hello world')
+    })
     t.end()
 })
 
 t.test('test function title-case()', (t) => {
     const result = transform(xml, {
-        titleCase: 'title-case(root/string)',
-        titleCase2: 'title-case(root/string2)'
+        titleCase: ['//items/item', 'title-case(.)']
     })
-    t.equal(result.titleCase, 'Hello World')
-    t.equal(result.titleCase2, 'Room Superior')
+    result.titleCase.forEach(u => {
+        t.equal(u, 'Hello World')
+    })
     t.end()
 })
 
