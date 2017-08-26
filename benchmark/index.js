@@ -5,27 +5,37 @@ const x2j = require('rapidx2j')
 const xml2json = require('xml2json')
 const xml2js = require('xml2js').parseString
 const fastXmlParser = require('fast-xml-parser')
+const nkit = require('nkit4nodejs')
 
 const suite = new benchmark.Suite()
 const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
 
 suite.add('camaro', function() {
     const template = {
-        cache_key: "/HotelListResponse/cacheKey",
-        hotels: ["//HotelSummary", {
-            hotel_id: "hotelId",
-            name: "name",
-            rooms: ["RoomRateDetailsList/RoomRateDetails", {
-                rates: ["RateInfos/RateInfo", {
-                    currency: "ChargeableRateInfo/@currencyCode",
-                    non_refundable: "nonRefundable",
-                    price: "ChargeableRateInfo/@total"
-                }],
-                room_name: "roomDescription",
-                room_type_id: "roomTypeCode"
-            }]
-        }],
-        session_id: "/HotelListResponse/customerSessionId"
+        cache_key: '/HotelListResponse/cacheKey',
+        hotels: [
+            '//HotelSummary',
+            {
+                hotel_id: 'hotelId',
+                name: 'name',
+                rooms: [
+                    'RoomRateDetailsList/RoomRateDetails',
+                    {
+                        rates: [
+                            'RateInfos/RateInfo',
+                            {
+                                currency: 'ChargeableRateInfo/@currencyCode',
+                                non_refundable: 'nonRefundable',
+                                price: 'ChargeableRateInfo/@total'
+                            }
+                        ],
+                        room_name: 'roomDescription',
+                        room_type_id: 'roomTypeCode'
+                    }
+                ]
+            }
+        ],
+        session_id: '/HotelListResponse/customerSessionId'
     }
     camaro(xml, template)
 })
@@ -44,6 +54,19 @@ suite.add('xml2js', function() {
 
 suite.add('fast-xml-parser', function() {
     fastXmlParser.parse(xml)
+})
+
+suite.add('nkit4nodejs', function() {
+    const options = {
+        trim: true,
+        attrkey: '$',
+        textkey: '_',
+        explicit_array: true
+    }
+
+    const builder = new nkit.AnyXml2VarBuilder(options)
+    builder.feed(xml)
+    const result = builder.end()
 })
 
 suite.on('cycle', cycle)
