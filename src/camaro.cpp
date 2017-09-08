@@ -3,7 +3,6 @@
 #include "transform.cpp"
 
 void transform(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-
   if (info.Length() < 2) {
     Nan::ThrowTypeError("Wrong number of arguments");
     return;
@@ -21,7 +20,8 @@ void transform(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   std::string json_template = std::string(*param2);
 
   std::string output = transform(xml, json_template);
-  v8::Local<v8::String> v8output = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), output.c_str());
+  v8::Local<v8::String> v8output =
+      v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), output.c_str());
 
   info.GetReturnValue().Set(v8output);
 }
