@@ -10,26 +10,25 @@ using string = std::string;
 using xquery = pugi::xpath_query;
 using nodeset = pugi::xpath_node_set;
 
+enum ReturnType { NUMBER, STRING, BOOLEAN };
+
 template <typename T>
 void walk(T& doc, json& n, json& output, string key);
-
-const string T_NUMBER = "number";
-const string T_STRING = "string";
-const string T_BOOLEAN = "boolean";
 
 inline bool string_contains(string to_check, string prefix) {
   return to_check.size() >= prefix.size() &&
          to_check.compare(0, prefix.size(), prefix) == 0;
 }
 
-inline string get_return_type(string& path) {
+inline ReturnType get_return_type(string& path) {
   if (string_contains(path, "count(") || string_contains(path, "sum(") ||
       string_contains(path, "number(") || string_contains(path, "ceiling(") ||
       string_contains(path, "floor(") || string_contains(path, "round("))
-    return T_NUMBER;
+    return NUMBER;
 
-  if (string_contains(path, "boolean(")) return T_BOOLEAN;
-  return T_STRING;
+  if (string_contains(path, "boolean("))
+    return BOOLEAN;
+  return STRING;
 }
 
 template <typename T>
@@ -84,14 +83,14 @@ json seek_array(T& doc, json& node) {
       tmp.push_back(obj);
     } else if (inner.is_string()) {
       string path = inner;
-      string type = get_return_type((path));
-      if (type == T_NUMBER) {
+      ReturnType type = get_return_type((path));
+      if (type == NUMBER) {
         tmp.push_back(seek_single_number(n, inner));
       }
-      if (type == T_STRING) {
+      if (type == STRING) {
         tmp.push_back(seek_single_string(n, inner));
       }
-      if (type == T_BOOLEAN) {
+      if (type == BOOLEAN) {
         tmp.push_back(seek_single_boolean(n, inner));
       }
     }
@@ -118,14 +117,14 @@ void walk(T& doc, json& n, json& output, string key) {
     output[key] = seek_object(doc, n);
   } else if (n.is_string()) {
     string path = n;
-    string type = get_return_type(path);
-    if (type == T_NUMBER) {
+    ReturnType type = get_return_type(path);
+    if (type == NUMBER) {
       output[key] = seek_single_number(doc, n);
     }
-    if (type == T_STRING) {
+    if (type == STRING) {
       output[key] = seek_single_string(doc, n);
     }
-    if (type == T_BOOLEAN) {
+    if (type == BOOLEAN) {
       output[key] = seek_single_boolean(doc, n);
     }
   }
