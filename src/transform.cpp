@@ -10,7 +10,7 @@ using string = std::string;
 using xquery = pugi::xpath_query;
 using nodeset = pugi::xpath_node_set;
 
-enum ReturnType { NUMBER, STRING, BOOLEAN };
+enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
 template <typename T>
 void walk(T& doc, json& n, json& output, string key);
@@ -24,11 +24,11 @@ inline ReturnType get_return_type(string& path) {
   if (string_contains(path, "count(") || string_contains(path, "sum(") ||
       string_contains(path, "number(") || string_contains(path, "ceiling(") ||
       string_contains(path, "floor(") || string_contains(path, "round("))
-    return NUMBER;
+    return T_NUMBER;
 
   if (string_contains(path, "boolean("))
-    return BOOLEAN;
-  return STRING;
+    return T_BOOLEAN;
+  return T_STRING;
 }
 
 template <typename T>
@@ -84,13 +84,13 @@ json seek_array(T& doc, json& node) {
     } else if (inner.is_string()) {
       string path = inner;
       ReturnType type = get_return_type((path));
-      if (type == NUMBER) {
+      if (type == T_NUMBER) {
         tmp.push_back(seek_single_number(n, inner));
       }
-      if (type == STRING) {
+      if (type == T_STRING) {
         tmp.push_back(seek_single_string(n, inner));
       }
-      if (type == BOOLEAN) {
+      if (type == T_BOOLEAN) {
         tmp.push_back(seek_single_boolean(n, inner));
       }
     }
@@ -118,13 +118,13 @@ void walk(T& doc, json& n, json& output, string key) {
   } else if (n.is_string()) {
     string path = n;
     ReturnType type = get_return_type(path);
-    if (type == NUMBER) {
+    if (type == T_NUMBER) {
       output[key] = seek_single_number(doc, n);
     }
-    if (type == STRING) {
+    if (type == T_STRING) {
       output[key] = seek_single_string(doc, n);
     }
-    if (type == BOOLEAN) {
+    if (type == T_BOOLEAN) {
       output[key] = seek_single_boolean(doc, n);
     }
   }
