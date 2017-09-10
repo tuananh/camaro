@@ -50,6 +50,7 @@ We also introduce some custom syntax such as:
 
 * if a path start with `#`, that means it's a constant. E.g: `#1234` will return `1234`
 * if a path is empty, return blank
+* Some string manipulation functions which are not availble in XPath 1.0 such as `lower-case`, `upper-case`, `title-case`, `camel-case` and `snake-case`
 
 The rest are pretty much vanilla XPath 1.0.
 

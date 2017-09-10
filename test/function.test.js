@@ -8,9 +8,10 @@ const xml = `
         <number>20.3</number>
         <boolean>TrUe</boolean>
         <items>
-            <item>hEllo WorlD</item>
-            <item>Hello World</item>
-            <item>hello wOrld</item>
+            <item>hEllo WorlD camaRo</item>
+            <item>Hello World cAmaro</item>
+            <item>hello wOrld caMaro</item>
+            <item>hEllO wOrlD camaRo</item>
         </items>
     </root>
 `
@@ -20,7 +21,7 @@ t.test('test function upper-case()', (t) => {
         upperCase: ['//items/item', 'upper-case(.)']
     })
     result.upperCase.forEach(u => {
-        t.equal(u, 'HELLO WORLD')
+        t.equal(u, 'HELLO WORLD CAMARO')
     })
     t.end()
 })
@@ -30,7 +31,7 @@ t.test('test function lower-case()', (t) => {
         lowerCase: ['//items/item', 'lower-case(.)']
     })
     result.lowerCase.forEach(u => {
-        t.equal(u, 'hello world')
+        t.equal(u, 'hello world camaro')
     })
     t.end()
 })
@@ -40,11 +41,30 @@ t.test('test function title-case()', (t) => {
         titleCase: ['//items/item', 'title-case(.)']
     })
     result.titleCase.forEach(u => {
-        t.equal(u, 'Hello World')
+        t.equal(u, 'Hello World Camaro')
     })
     t.end()
 })
 
+t.test('test function camel-case()', (t) => {
+    const result = transform(xml, {
+        camelCase: ['//items/item', 'camel-case(.)']
+    })
+    result.camelCase.forEach(u => {
+        t.equal(u, 'helloWorldCamaro')
+    })
+    t.end()
+})
+
+t.test('test function snake-case()', (t) => {
+    const result = transform(xml, {
+        snakeCase: ['//items/item', 'snake-case(.)']
+    })
+    result.snakeCase.forEach(u => {
+        t.equal(u, 'hello_world_camaro')
+    })
+    t.end()
+})
 
 t.test('test function round()', (t) => {
     const result = transform(xml, { round: 'round(root/single)' })
