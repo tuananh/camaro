@@ -1,4 +1,4 @@
 [submodule "src/pugixml"]
 	path = src/pugixml
 	url = https://github.com/tuananh/pugixml.git
-    branch = feature/xpath2-functions
+    branch = develop
