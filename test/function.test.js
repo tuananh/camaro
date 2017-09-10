@@ -11,6 +11,7 @@ const xml = `
             <item>hEllo WorlD</item>
             <item>Hello World</item>
             <item>hello wOrld</item>
+            <item>hEllO wOrlD</item>
         </items>
     </root>
 `
@@ -45,6 +46,25 @@ t.test('test function title-case()', (t) => {
     t.end()
 })
 
+t.test('test fubuildnction camel-case()', (t) => {
+    const result = transform(xml, {
+        camelCase: ['//items/item', 'camel-case(.)']
+    })
+    result.camelCase.forEach(u => {
+        t.equal(u, 'helloWorld')
+    })
+    t.end()
+})
+
+t.test('test function snake-case()', (t) => {
+    const result = transform(xml, {
+        snakeCase: ['//items/item', 'snake-case(.)']
+    })
+    result.snakeCase.forEach(u => {
+        t.equal(u, 'hello_world')
+    })
+    t.end()
+})
 
 t.test('test function round()', (t) => {
     const result = transform(xml, { round: 'round(root/single)' })
