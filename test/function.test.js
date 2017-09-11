@@ -66,6 +66,16 @@ t.test('test function snake-case()', (t) => {
     t.end()
 })
 
+t.test('test nested function calls', (t) => {
+    const result = transform(xml, {
+        snakeCase: ['//items/item', 'snake-case(lower-case(.))']
+    })
+    result.snakeCase.forEach(u => {
+        t.equal(u, 'hello_world_camaro')
+    })
+    t.end()
+})
+
 t.test('test function round()', (t) => {
     const result = transform(xml, { round: 'round(root/single)' })
     t.equal(result.round, 20)
