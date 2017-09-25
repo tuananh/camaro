@@ -109,8 +109,8 @@ Local<Array> seek_array(T& doc,
       for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
         walk(n, it.value(), obj, it.key(), args);
       }
-      // const char* pkey = std::to_string(i);
-      // tmp->Set(String::NewFromUtf8(isolate, pkey), obj);
+      const char* pkey = std::to_string(i).c_str();
+      tmp->Set(String::NewFromUtf8(isolate, pkey), obj);
     } else if (inner.is_string()) {
       string path = inner;
       ReturnType type = get_return_type((path));
@@ -176,7 +176,7 @@ void walk(T& doc,
   }
 }
 
-void transform(string xml,
+void transform_xml(string xml,
                string fmt,
                const Nan::FunctionCallbackInfo<Value>& args,
                Local<Object>& output) {

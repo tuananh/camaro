@@ -28,7 +28,7 @@ void transform(const Nan::FunctionCallbackInfo<Value>& args) {
 
   Isolate* isolate = args.GetIsolate();
   Local<Object> obj = Object::New(isolate);
-  transform(xml, json_template, &args, &obj);
+  transform_xml(xml, json_template, args, obj);
 
   args.GetReturnValue().Set(obj);
 }
