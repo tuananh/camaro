@@ -9,11 +9,23 @@ using json = nlohmann::json;
 using string = std::string;
 using xquery = pugi::xpath_query;
 using nodeset = pugi::xpath_node_set;
+using v8::Local;
+using v8::String;
+using v8::Number;
+using v8::Boolean;
+using v8::Value;
+using v8::Object;
+using v8::Array;
+using v8::Isolate;
 
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
 template <typename T>
-void walk(T& doc, json& n, json& output, string key);
+void walk(T& doc,
+          json& n,
+          Local<Object>& output,
+          string key,
+          const Nan::FunctionCallbackInfo<Value>& args);
 
 inline bool string_contains(string to_check, string prefix) {
   return to_check.size() >= prefix.size() &&
@@ -32,66 +44,84 @@ inline ReturnType get_return_type(string& path) {
 }
 
 template <typename T>
-bool seek_single_boolean(T& xnode, json& j) {
+Local<Boolean> seek_single_boolean(
+    T& xnode,
+    json& j,
+    const Nan::FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
   string path = j;
   xquery query(path.c_str());
-  return query.evaluate_boolean(xnode);
+  auto val = query.evaluate_boolean(xnode);
+  return Boolean::New(isolate, val);
 }
 
 template <typename T>
-string seek_single_string(T& xnode, json& j) {
+Local<String> seek_single_string(T& xnode,
+                                 json& j,
+                                 const Nan::FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
   string path = j;
-  if (path.empty()) {
-    return "";
-  } else if (path.find("#") != std::string::npos) {
-    return path.substr(1, path.size());
+  string val = "";
+
+  if (path.find("#") != std::string::npos) {
+    val = path.substr(1, path.size());
   } else {
     xquery query(path.c_str());
-    return query.evaluate_string(xnode);
+    val = query.evaluate_string(xnode);
   }
+
+  return String::NewFromUtf8(isolate, val.c_str());
 }
 
 template <typename T>
-double seek_single_number(T& xnode, json& j) {
+Local<Number> seek_single_number(T& xnode,
+                                 json& j,
+                                 const Nan::FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
   string path = j;
   xquery query(path.c_str());
-  return query.evaluate_number(xnode);
+  double val = query.evaluate_number(xnode);
+  return Number::New(isolate, val);
 }
 
 template <typename T>
-json seek_array(T& doc, json& node) {
+Local<Array> seek_array(T& doc,
+                        json& node,
+                        const Nan::FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  Local<Array> tmp = Array::New(isolate);
+
   // a special case for backward compatible with xpath-object-transform
   if (node.empty()) {
-    return json::array();
+    return tmp;
   }
 
   string base_path = node[0];
   xquery q(base_path.c_str());
   pugi::xpath_node_set nodes = q.evaluate_node_set(doc);
-  json tmp = json::array();
 
   for (size_t i = 0; i < nodes.size(); ++i) {
     pugi::xpath_node n = nodes[i];
     auto inner = node[1];
 
     if (inner.is_object()) {
-      json obj = json({});
+      Local<Object> obj = Object::New(isolate);
       for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
-        walk(n, it.value(), obj, it.key());
+        walk(n, it.value(), obj, it.key(), args);
       }
-
-      tmp.push_back(obj);
+      // const char* pkey = std::to_string(i);
+      // tmp->Set(String::NewFromUtf8(isolate, pkey), obj);
     } else if (inner.is_string()) {
       string path = inner;
       ReturnType type = get_return_type((path));
-      if (type == T_NUMBER) {
-        tmp.push_back(seek_single_number(n, inner));
-      }
       if (type == T_STRING) {
-        tmp.push_back(seek_single_string(n, inner));
+        tmp->Set(i, seek_single_string(n, inner, args));
+      }
+      if (type == T_NUMBER) {
+        tmp->Set(i, seek_single_number(n, inner, args));
       }
       if (type == T_BOOLEAN) {
-        tmp.push_back(seek_single_boolean(n, inner));
+        tmp->Set(i, seek_single_boolean(n, inner, args));
       }
     }
   }
@@ -100,50 +130,64 @@ json seek_array(T& doc, json& node) {
 }
 
 template <typename T>
-json seek_object(T& doc, json& node) {
-  auto output = json({});
+Local<Object> seek_object(T& doc,
+                          json& node,
+                          const Nan::FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  Local<Object> output = Object::New(isolate);
+
   for (json::iterator it = node.begin(); it != node.end(); ++it) {
     string key = it.key();
-    walk(doc, *it, output, key);
+    walk(doc, *it, output, key, args);
   }
+
   return output;
 }
 
 template <typename T>
-void walk(T& doc, json& n, json& output, string key) {
+void walk(T& doc,
+          json& n,
+          Local<Object>& output,
+          string key,
+          const Nan::FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  const char* ckey = key.c_str();
   if (n.is_array()) {
-    output[key] = seek_array(doc, n);
+    output->Set(String::NewFromUtf8(isolate, ckey),
+                seek_array(doc, n, args));
   } else if (n.is_object()) {
-    output[key] = seek_object(doc, n);
+    output->Set(String::NewFromUtf8(isolate, ckey),
+                seek_object(doc, n, args));
   } else if (n.is_string()) {
     string path = n;
     ReturnType type = get_return_type(path);
     if (type == T_NUMBER) {
-      output[key] = seek_single_number(doc, n);
+      output->Set(String::NewFromUtf8(isolate, ckey),
+                  seek_single_number(doc, n, args));
     }
     if (type == T_STRING) {
-      output[key] = seek_single_string(doc, n);
+      output->Set(String::NewFromUtf8(isolate, ckey),
+                  seek_single_string(doc, n, args));
     }
     if (type == T_BOOLEAN) {
-      output[key] = seek_single_boolean(doc, n);
+      output->Set(String::NewFromUtf8(isolate, ckey),
+                  seek_single_boolean(doc, n, args));
     }
   }
 }
 
-string transform(string xml, string fmt) {
+void transform(string xml,
+               string fmt,
+               const Nan::FunctionCallbackInfo<Value>& args,
+               Local<Object>& output) {
   pugi::xml_document doc;
-  if (!doc.load_string(xml.c_str())) {
-    return "";
+  if (doc.load_string(xml.c_str())) {
+    auto j = json::parse(fmt);
+
+    for (json::iterator it = j.begin(); it != j.end(); ++it) {
+      string key = it.key();
+      auto& node = j[key];
+      walk(doc, node, output, key, args);
+    }
   }
-
-  auto j = json::parse(fmt);
-  json result;
-
-  for (json::iterator it = j.begin(); it != j.end(); ++it) {
-    string key = it.key();
-    auto& node = j[key];
-    walk(doc, node, result, key);
-  }
-
-  return result.dump();
 }
