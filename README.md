@@ -20,7 +20,7 @@
 Here are the benchmarks:
 
 ```
-camaro x 513 ops/sec ±0.86% (86 runs sampled)
+camaro x 576 ops/sec ±0.96% (88 runs sampled)
 rapidx2j x 175 ops/sec ±0.91% (79 runs sampled)
 xml2json x 21.61 ops/sec ±0.83% (39 runs sampled)
 xml2js x 21.64 ops/sec ±6.27% (41 runs sampled)

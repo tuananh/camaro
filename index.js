@@ -19,13 +19,7 @@ function transform(xml, template) {
     const template_string = JSON.stringify(template)
     let result = camaro.transform(xml, template_string)
 
-    if (result) {
-        try {
-            result = JSON.parse(result)
-        } catch (err) {
-            throw new TypeError('Invalid input: Malformed xml')
-        }
-    } else {
+    if (!result) {
         throw new TypeError('Invalid input: Malformed xml')
     }
 
