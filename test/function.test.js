@@ -13,6 +13,9 @@ const xml = `
             <item>hello wOrld caMaro</item>
             <item>hEllO wOrlD camaRo</item>
         </items>
+        <unicode>
+            <item>phòng 2 người</item>
+        </unicode>
     </root>
 `
 
@@ -42,6 +45,16 @@ t.test('test function title-case()', (t) => {
     })
     result.titleCase.forEach(u => {
         t.equal(u, 'Hello World Camaro')
+    })
+    t.end()
+})
+
+t.test('test function title-case() unicode', (t) => {
+    const result = transform(xml, {
+        titleCase: ['//unicode/item', 'title-case(.)']
+    })
+    result.titleCase.forEach(u => {
+        t.equal(u, 'Phòng 2 Người')
     })
     t.end()
 })
