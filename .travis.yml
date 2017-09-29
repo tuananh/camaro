@@ -14,6 +14,9 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - g++-4.9
+cache:
+  directories:
+    - $HOME/.npm
 before_install:
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then export CXX=clang++; fi
   - $CXX --version
