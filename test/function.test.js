@@ -16,6 +16,9 @@ const xml = `
         <unicode>
             <item>phòng 2 người</item>
         </unicode>
+        <special>
+            <item>twin/double@room</item>
+        </special>
     </root>
 `
 
@@ -55,6 +58,16 @@ t.test('test function title-case() unicode', (t) => {
     })
     result.titleCase.forEach(u => {
         t.equal(u, 'Phòng 2 Người')
+    })
+    t.end()
+})
+
+t.test('test function title-case() upper after symbols', (t) => {
+    const result = transform(xml, {
+        titleCase: ['//special/item', 'title-case(.)']
+    })
+    result.titleCase.forEach(u => {
+        t.equal(u, 'Twin/Double@Room')
     })
     t.end()
 })
