@@ -4,11 +4,10 @@
 
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
 
-[![npm version](https://badge.fury.io/js/camaro.svg)](https://badge.fury.io/js/camaro)
-[![Build Status: Linux](https://travis-ci.org/tuananh/camaro.svg?branch=master)](https://travis-ci.org/tuananh/camaro)
-[![Build Status: Windows](https://ci.appveyor.com/api/projects/status/2jqxopf614tvwl7o/branch/master?svg=true)](https://ci.appveyor.com/project/tuananh/camaro)
-[![Dependency Status](https://dependencyci.com/github/tuananh/camaro/badge)](https://dependencyci.com/github/tuananh/camaro)
-[![Greenkeeper badge](https://badges.greenkeeper.io/tuananh/camaro.svg)](https://greenkeeper.io/)
+[![npm](https://img.shields.io/npm/v/camaro.svg?style=flat-square)](https://npm.im/camaro)
+[![Travis](https://img.shields.io/travis/tuananh/camaro.svg?style=flat-square)](https://travis-ci.org/tuananh/camaro)
+[![AppVeyor](https://img.shields.io/appveyor/ci/tuananh/camaro.svg?style=flat-square)](https://ci.appveyor.com/project/tuananh/camaro)
+[![David](https://img.shields.io/david/tuananh/camaro.svg?style=flat-square)](https://david-dm.org/tuananh/camaro)
 
 ## Features
 
