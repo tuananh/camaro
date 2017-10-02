@@ -1,6 +1,14 @@
+.gitignore
+.DS_Store
+npm-debug.log
+node_modules
+.travis.yml
+appveyor.yml
+TODO.md
+build
 test
 benchmark
 coverage
 examples
 lib
-intro.png
+*.png
