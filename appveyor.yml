@@ -34,9 +34,9 @@ install:
   - npm i -g npm node-pre-gyp --production
   - npm install
 
-build:
-  parallel: true
-  verbosity: minimal
+# build:
+#   parallel: true
+#   verbosity: minimal
 
 test_script:
   - npm test
