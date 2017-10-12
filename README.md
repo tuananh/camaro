@@ -82,6 +82,12 @@ const template = {
 const result = transform(xml, template)
 ```
 
+### Namespaces
+
+By default, a path `'//HotelSummary'` will transform all `HotelSummary` elements regardless of their namespaces. To only transform elements under a specific namespace, say `http://v3.hotel.wsapi.ean.com`, you can append the path with a filter:
+
+    '//HotelSummary[namespace-uri() = "http://v3.hotel.wsapi.ean.com"]'
+
 ## Licence
 
 The MIT License
