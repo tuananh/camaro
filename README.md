@@ -19,13 +19,13 @@
 Here are the benchmarks:
 
 ```
-camaro x 575 ops/sec ±1.13% (88 runs sampled)
-rapidx2j x 177 ops/sec ±1.71% (80 runs sampled)
-xml2json x 18.95 ops/sec ±0.78% (50 runs sampled)
-xml2js x 34.72 ops/sec ±7.99% (62 runs sampled)
-fast-xml-parser x 120 ops/sec ±3.55% (68 runs sampled)
-nkit4nodejs x 84.56 ops/sec ±2.09% (71 runs sampled)
-xml-js x 27.52 ops/sec ±7.33% (51 runs sampled)
+camaro x 606 ops/sec ±1.02% (84 runs sampled)
+rapidx2j x 175 ops/sec ±2.32% (78 runs sampled)
+xml2json x 19.54 ops/sec ±2.23% (36 runs sampled)
+xml2js x 32.90 ops/sec ±8.11% (59 runs sampled)
+fast-xml-parser x 154 ops/sec ±4.06% (64 runs sampled)
+nkit4nodejs x 80.14 ops/sec ±2.99% (68 runs sampled)
+xml-js x 28.51 ops/sec ±8.18% (53 runs sampled)
 ```
 
 * Please note that this is an unfair game for camaro because it only transform what it needs.

@@ -21,10 +21,7 @@ using v8::Isolate;
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
 template <typename T>
-void walk(T& doc,
-          json& n,
-          Local<Object>& output,
-          string key,
+void walk(T& doc, json& n, Local<Object>& output, string key,
           const Nan::FunctionCallbackInfo<Value>& args);
 
 inline bool string_contains(string to_check, string prefix) {
@@ -32,22 +29,68 @@ inline bool string_contains(string to_check, string prefix) {
          to_check.compare(0, prefix.size(), prefix) == 0;
 }
 
-inline ReturnType get_return_type(string& path) {
-  if (string_contains(path, "count(") || string_contains(path, "sum(") ||
-      string_contains(path, "number(") || string_contains(path, "ceiling(") ||
-      string_contains(path, "floor(") || string_contains(path, "round("))
-    return T_NUMBER;
+inline char charAt(string& str, size_t pos) {
+  if (str.size() > pos) {
+    return str.at(pos);
+  } else {
+    return '\0';
+  }
+}
 
-  if (string_contains(path, "boolean("))
-    return T_BOOLEAN;
-  return T_STRING;
+ReturnType get_return_type(string& path) {
+  const char ch = charAt(path, 0);
+  switch (ch) {
+    case 'b':
+      if (string_contains(path, "boolean(")) {
+        return T_BOOLEAN;
+      } else {
+        return T_STRING;
+      }
+      break;
+    case 'c':
+      if (string_contains(path, "count(") || string_contains(path, "ceiling(")) {
+        return T_NUMBER;
+      } else {
+        return T_STRING;
+      }
+      break;
+    case 'f':
+      if (string_contains(path, "floor(")) {
+        return T_NUMBER;
+      } else {
+        return T_STRING;
+      }
+      break;
+    case 'n':
+      if (string_contains(path, "number(")) {
+        return T_NUMBER;
+      } else {
+        return T_STRING;
+      }
+      break;
+    case 'r':
+      if (string_contains(path, "round(")) {
+        return T_NUMBER;
+      } else {
+        return T_STRING;
+      }
+      break;
+    case 's':
+      if (string_contains(path, "sum(")) {
+        return T_NUMBER;
+      } else {
+        return T_STRING;
+      }
+      break;
+    default:
+      return T_STRING;
+      break;
+  }
 }
 
 template <typename T>
 Local<Boolean> seek_single_boolean(
-    T& xnode,
-    json& j,
-    const Nan::FunctionCallbackInfo<Value>& args) {
+    T& xnode, json& j, const Nan::FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   string path = j;
   xquery query(path.c_str());
@@ -56,8 +99,7 @@ Local<Boolean> seek_single_boolean(
 }
 
 template <typename T>
-Local<String> seek_single_string(T& xnode,
-                                 json& j,
+Local<String> seek_single_string(T& xnode, json& j,
                                  const Nan::FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   string path = j;
@@ -74,8 +116,7 @@ Local<String> seek_single_string(T& xnode,
 }
 
 template <typename T>
-Local<Number> seek_single_number(T& xnode,
-                                 json& j,
+Local<Number> seek_single_number(T& xnode, json& j,
                                  const Nan::FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   string path = j;
@@ -85,8 +126,7 @@ Local<Number> seek_single_number(T& xnode,
 }
 
 template <typename T>
-Local<Array> seek_array(T& doc,
-                        json& node,
+Local<Array> seek_array(T& doc, json& node,
                         const Nan::FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Array> tmp = Array::New(isolate);
@@ -130,8 +170,7 @@ Local<Array> seek_array(T& doc,
 }
 
 template <typename T>
-Local<Object> seek_object(T& doc,
-                          json& node,
+Local<Object> seek_object(T& doc, json& node,
                           const Nan::FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Object> output = Object::New(isolate);
@@ -145,19 +184,14 @@ Local<Object> seek_object(T& doc,
 }
 
 template <typename T>
-void walk(T& doc,
-          json& n,
-          Local<Object>& output,
-          string key,
+void walk(T& doc, json& n, Local<Object>& output, string key,
           const Nan::FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   const char* ckey = key.c_str();
   if (n.is_array()) {
-    output->Set(String::NewFromUtf8(isolate, ckey),
-                seek_array(doc, n, args));
+    output->Set(String::NewFromUtf8(isolate, ckey), seek_array(doc, n, args));
   } else if (n.is_object()) {
-    output->Set(String::NewFromUtf8(isolate, ckey),
-                seek_object(doc, n, args));
+    output->Set(String::NewFromUtf8(isolate, ckey), seek_object(doc, n, args));
   } else if (n.is_string()) {
     string path = n;
     ReturnType type = get_return_type(path);
@@ -176,10 +210,9 @@ void walk(T& doc,
   }
 }
 
-void transform_xml(string xml,
-               string fmt,
-               const Nan::FunctionCallbackInfo<Value>& args,
-               Local<Object>& output) {
+void transform_xml(string xml, string fmt,
+                   const Nan::FunctionCallbackInfo<Value>& args,
+                   Local<Object>& output) {
   pugi::xml_document doc;
   if (doc.load_string(xml.c_str())) {
     auto j = json::parse(fmt);
