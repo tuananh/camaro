@@ -26,6 +26,7 @@ xml2js x 32.90 ops/sec ±8.11% (59 runs sampled)
 fast-xml-parser x 154 ops/sec ±4.06% (64 runs sampled)
 nkit4nodejs x 80.14 ops/sec ±2.99% (68 runs sampled)
 xml-js x 28.51 ops/sec ±8.18% (53 runs sampled)
+libxmljs x 107 ops/sec ±18.57% (48 runs sampled)
 ```
 
 * Please note that this is an unfair game for camaro because it only transform what it needs.
