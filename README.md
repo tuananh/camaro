@@ -89,6 +89,12 @@ By default, a path `'//HotelSummary'` will transform all `HotelSummary` elements
 
     '//HotelSummary[namespace-uri() = "http://v3.hotel.wsapi.ean.com"]'
 
+## Using camaro on AWS Lambda
+
+In order to use `camaro` on AWS Lambda, you should download a copy of prebuilt camaro from [Releases](https://github.com/tuananh/camaro/releases) and put to this folder path `node_modules/camaro/lib/binding/camaro.node`.
+
+As of currently, AWS Lambda only supports node 6 on Linux so you're looking for `camaro-v2.1.0-node-v48-linux-x64.tar.gz`.
+
 ## Licence
 
 The MIT License
