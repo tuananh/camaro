@@ -26,6 +26,7 @@ xml2js x 32.90 ops/sec ±8.11% (59 runs sampled)
 fast-xml-parser x 154 ops/sec ±4.06% (64 runs sampled)
 nkit4nodejs x 80.14 ops/sec ±2.99% (68 runs sampled)
 xml-js x 28.51 ops/sec ±8.18% (53 runs sampled)
+libxmljs x 107 ops/sec ±18.57% (48 runs sampled)
 ```
 
 * Please note that this is an unfair game for camaro because it only transform what it needs.
@@ -87,6 +88,12 @@ const result = transform(xml, template)
 By default, a path `'//HotelSummary'` will transform all `HotelSummary` elements regardless of their namespaces. To only transform elements under a specific namespace, say `http://v3.hotel.wsapi.ean.com`, you can append the path with a filter:
 
     '//HotelSummary[namespace-uri() = "http://v3.hotel.wsapi.ean.com"]'
+
+## Using camaro on AWS Lambda
+
+In order to use `camaro` on AWS Lambda, you should download a copy of prebuilt camaro from [Releases](https://github.com/tuananh/camaro/releases) and put to this folder path `node_modules/camaro/lib/binding/camaro.node`.
+
+As of currently, AWS Lambda only supports node 6 on Linux so you're looking for `camaro-v2.1.0-node-v48-linux-x64.tar.gz`.
 
 ## Licence
 

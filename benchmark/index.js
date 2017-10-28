@@ -7,6 +7,7 @@ const xml2js = require('xml2js').parseString
 const fastXmlParser = require('fast-xml-parser')
 const nkit = require('nkit4nodejs')
 const xmljs = require('xml-js')
+const libxmljs = require("libxmljs")
 
 const suite = new benchmark.Suite()
 const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
@@ -72,6 +73,10 @@ suite.add('nkit4nodejs', function() {
 
 suite.add('xml-js', function() {
     const result = xmljs.xml2json(xml, {compact: true, spaces: 2})
+})
+
+suite.add('libxmljs', function() {
+    const xmlDoc = libxmljs.parseXml(xml)
 })
 
 suite.on('cycle', cycle)

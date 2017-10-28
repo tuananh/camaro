@@ -39,53 +39,44 @@ inline char charAt(string& str, size_t pos) {
 
 ReturnType get_return_type(string& path) {
   const char ch = charAt(path, 0);
+  ReturnType t = T_STRING;
   switch (ch) {
     case 'b':
       if (string_contains(path, "boolean(")) {
-        return T_BOOLEAN;
-      } else {
-        return T_STRING;
+        t = T_BOOLEAN;
       }
       break;
     case 'c':
       if (string_contains(path, "count(") || string_contains(path, "ceiling(")) {
-        return T_NUMBER;
-      } else {
-        return T_STRING;
+        t = T_NUMBER;
       }
       break;
     case 'f':
       if (string_contains(path, "floor(")) {
-        return T_NUMBER;
-      } else {
-        return T_STRING;
+        t = T_NUMBER;
       }
       break;
     case 'n':
       if (string_contains(path, "number(")) {
-        return T_NUMBER;
-      } else {
-        return T_STRING;
+        t = T_NUMBER;
       }
       break;
     case 'r':
       if (string_contains(path, "round(")) {
-        return T_NUMBER;
-      } else {
-        return T_STRING;
+        t = T_NUMBER;
       }
       break;
     case 's':
       if (string_contains(path, "sum(")) {
-        return T_NUMBER;
-      } else {
-        return T_STRING;
+        t = T_NUMBER;
       }
       break;
     default:
-      return T_STRING;
+      t = T_STRING;
       break;
   }
+
+  return t;
 }
 
 template <typename T>
