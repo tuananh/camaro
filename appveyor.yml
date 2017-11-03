@@ -30,7 +30,7 @@ install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - git submodule update --init --recursive
   - npm config set spin false
-  - npm i -g npm node-pre-gyp --production
+  - npm i -g node-pre-gyp --production
   - npm install
 
 test_script:
