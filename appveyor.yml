@@ -12,12 +12,12 @@ environment:
   github_release_token:
     secure: PbRZg8hVpAS5WWNZYY461xJOOgZLaDIR8QGM5fX+o11JCLoR+ccdwkbBHldTBcBx
   matrix:
-    - nodejs_version: "9"
+    - nodejs_version: "6"
     - nodejs_version: "8"
+    - nodejs_version: "9"
     # - nodejs_version: "7"
     # LINK : fatal error LNK1104: cannot open file 'C:\Users\appveyor\.node-gyp\7.10.1\Debug\node.lib'
     # disable node 7 for now
-    - nodejs_version: "6"
 
 matrix:
   fast_finish: true
@@ -25,8 +25,8 @@ matrix:
 platform:
   - x64
 
-cache:
-  - '%APPDATA%\npm-cache'
+# cache:
+#   - '%APPDATA%\npm-cache'
 
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
