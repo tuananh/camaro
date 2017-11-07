@@ -17,7 +17,7 @@ const xml = `
             <item>phòng 2 người</item>
         </unicode>
         <special>
-            <item>twin/double@room</item>
+            <item>twin/double@room (room only)</item>
         </special>
     </root>
 `
@@ -67,7 +67,7 @@ t.test('test function title-case() upper after symbols', (t) => {
         titleCase: ['//special/item', 'title-case(.)']
     })
     result.titleCase.forEach(u => {
-        t.equal(u, 'Twin/Double@Room')
+        t.equal(u, 'Twin/Double@Room (Room Only)')
     })
     t.end()
 })
