@@ -5,6 +5,7 @@
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
+  "typings": "index.d.ts",
   "scripts": {
     "test": "istanbul test ./node_modules/tape/bin/tape 'test/*test.js'",
     "cover": "istanbul cover ./node_modules/tape/bin/tape 'test/*test.js'",
