@@ -4,7 +4,7 @@ const transform = require('../')
 t.test('test invalid xml string', (t) => {
     try {
         const result = transform('', {})
-    } catch(err) {
+    } catch (err) {
         t.equal(err instanceof TypeError, true, 'should throw TypeError invalid xml string')
     }
 
@@ -14,7 +14,13 @@ t.test('test invalid xml string', (t) => {
 t.test('test invalid template argument', (t) => {
     try {
         const result = transform('<xml/>', null)
-    } catch(err) {
+    } catch (err) {
+        t.equal(err instanceof TypeError, true, 'should throw TypeError invalid template')
+    }
+
+    try {
+        const result = transform('<xml/>', {})
+    } catch (err) {
         t.equal(err instanceof TypeError, true, 'should throw TypeError invalid template')
     }
 
