@@ -8,6 +8,7 @@ artifacts:
   - path: build\**\*.tar.gz
     name: camaro
 
+build: off
 environment:
   github_release_token:
     secure: PbRZg8hVpAS5WWNZYY461xJOOgZLaDIR8QGM5fX+o11JCLoR+ccdwkbBHldTBcBx
