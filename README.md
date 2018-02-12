@@ -8,6 +8,7 @@
 [![Travis](https://img.shields.io/travis/tuananh/camaro/master.svg?label=Linux%20%26%20macOS%20build&style=flat-square)](https://travis-ci.org/tuananh/camaro)
 [![AppVeyor](https://img.shields.io/appveyor/ci/tuananh/camaro/master.svg?label=Windows%20build&style=flat-square)](https://ci.appveyor.com/project/tuananh/camaro)
 [![David](https://img.shields.io/david/tuananh/camaro.svg?style=flat-square)](https://david-dm.org/tuananh/camaro)
+[![TypeScript definitions on DefinitelyTyped](//definitelytyped.org/badges/standard-flat.svg)](http://definitelytyped.org)
 [![npm](https://img.shields.io/npm/dt/camaro.svg?style=flat-square)](https://npm.im/camaro)
 ## Features
 
