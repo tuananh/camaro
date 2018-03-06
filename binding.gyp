@@ -17,16 +17,16 @@
     ],
     'conditions': [
       [
-        "OS==\"win\"",
+        'OS==\"win\"',
         {
-          "cflags": [
-            "-Wall"
+          'cflags': [
+            '-Wall'
           ],
-          "defines": [
-            "WIN"
+          'defines': [
+            'WIN'
           ],
-          "msvs_settings": {
-            "VCCLCompilerTool": {
+          'msvs_settings': {
+            'VCCLCompilerTool': {
               'AdditionalOptions': [
                 '/std:c++latest',
                 '/utf-8'
@@ -50,13 +50,13 @@
       ]
     }
   }, {
-    "target_name": "action_after_build",
-    "type": "none",
-    "dependencies": [ "<(module_name)" ],
-    "copies": [
+    'target_name': 'action_after_build',
+    'type': 'none',
+    'dependencies': [ '<(module_name)' ],
+    'copies': [
       {
-        "files": [ "<(PRODUCT_DIR)/<(module_name).node" ],
-        "destination": "<(module_path)"
+        'files': [ '<(PRODUCT_DIR)/<(module_name).node' ],
+        'destination': '<(module_path)'
       }
     ]
   }]
