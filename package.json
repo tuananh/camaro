@@ -27,7 +27,7 @@
   "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
   "license": "MIT",
   "dependencies": {
-    "nan": "2.9.1",
+    "nan": "2.10.0",
     "node-pre-gyp": "0.9.0"
   },
   "devDependencies": {
