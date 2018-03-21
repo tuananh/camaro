@@ -1,4 +1,5 @@
 #define PUGIXML_NO_EXCEPTIONS
+#define NAPI_DISABLE_CPP_EXCEPTIONS
 #define PUGIXML_HEADER_ONLY
 
 #include "napi.h"
