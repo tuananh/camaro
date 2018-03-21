@@ -1,41 +1,24 @@
 #define NOMINMAX
-#include <nan.h>
+#include <napi.h>
 #include "transform.cpp"
 
-using v8::Local;
-using v8::String;
-using v8::Value;
-using v8::Object;
-using v8::Isolate;
-using v8::FunctionTemplate;
+Napi::Object transform(const Napi::CallbackInfo &info)
+{
+  Napi::Env env = info.Env();
+  std::string xml = info[0].As<Napi::String>().Utf8Value();
+  std::string json_template = info[1].As<Napi::String>().Utf8Value();
 
-void transform(const Nan::FunctionCallbackInfo<Value>& args) {
-  if (args.Length() < 2) {
-    Nan::ThrowTypeError("Wrong number of arguments");
-    return;
-  }
+  Napi::Object output = Napi::Object::New(env);
+  transform_xml(xml, json_template, info, output);
 
-  if (!args[0]->IsString() || !args[1]->IsString()) {
-    Nan::ThrowTypeError("Wrong arguments");
-    return;
-  }
-
-  String::Utf8Value param1(args[0]->ToString());
-  String::Utf8Value param2(args[1]->ToString());
-
-  std::string xml = std::string(*param1);
-  std::string json_template = std::string(*param2);
-
-  Isolate* isolate = args.GetIsolate();
-  Local<Object> obj = Object::New(isolate);
-  transform_xml(xml, json_template, args, obj);
-
-  args.GetReturnValue().Set(obj);
+  return output;
 }
 
-void Init(Local<Object> exports) {
-  exports->Set(Nan::New("transform").ToLocalChecked(),
-               Nan::New<FunctionTemplate>(transform)->GetFunction());
+Napi::Object Init(Napi::Env env, Napi::Object exports)
+{
+  exports.Set(Napi::String::New(env, "transform"), Napi::Function::New(env, transform));
+
+  return exports;
 }
 
-NODE_MODULE(camaro, Init)
+NODE_API_MODULE(NODE_GYP_MODULE_NAME, Init)

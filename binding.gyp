@@ -5,8 +5,9 @@
       'src/camaro.cpp'
     ],
     'include_dirs': [
-      '<!(node -e "require(\'nan\')")'
+      "<!@(node -p \"require('node-addon-api').include\")"
     ],
+    'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
     'cflags_cc': [
       '-std=c++11',
       '-fexceptions',
