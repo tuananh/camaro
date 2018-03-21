@@ -1,4 +1,5 @@
 #define NOMINMAX
+#define NAPI_DISABLE_CPP_EXCEPTIONS
 #include <napi.h>
 #include "transform.cpp"
 
