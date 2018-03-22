@@ -30,12 +30,14 @@ xml-js x 28.51 ops/sec ±8.18% (53 runs sampled)
 libxmljs x 107 ops/sec ±18.57% (48 runs sampled)
 ```
 
-* Please note that this is an unfair game for camaro because it only transform what it needs.
+* Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
 The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
 
 * Benchmark run with Intel Core i5-5257U CPU @ 2.70GHz using Node v7.10.0
 
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
+
+* Performance on small XML strings is not good due to crossing between JS and C++ is expensive.
 
 ![intro](intro.png)
 
@@ -100,7 +102,7 @@ As of currently, AWS Lambda only supports node 6 on Linux so you're looking for 
 
 The MIT License
 
-Copyright (c) 2017 Tuan Anh Tran https://tuananh.org
+Copyright (c) 2018 Tuan Anh Tran https://tuananh.org
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
