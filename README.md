@@ -30,19 +30,22 @@ xml-js x 28.51 ops/sec ±8.18% (53 runs sampled)
 libxmljs x 107 ops/sec ±18.57% (48 runs sampled)
 ```
 
-* Please note that this is an unfair game for camaro because it only transform what it needs.
+* Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
 The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
 
 * Benchmark run with Intel Core i5-5257U CPU @ 2.70GHz using Node v7.10.0
 
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
 
+* Performance on small XML strings is not very good due to crossing between JS and C++ is expensive.
+
 ![intro](intro.png)
 
 ## Installation
 
 ```sh
-npm install camaro
+yarn add camaro
+# npm install camaro
 ```
 
 ## Usage
@@ -98,24 +101,4 @@ As of currently, AWS Lambda only supports node 6 on Linux so you're looking for 
 
 ## Licence
 
-The MIT License
-
-Copyright (c) 2017 Tuan Anh Tran https://tuananh.org
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+[The MIT License](LICENSE)
