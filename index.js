@@ -30,8 +30,8 @@ function transform(xml, template) {
         throw new TypeError('2nd argument (template) must be an object')
     }
 
-    const template_string = JSON.stringify(template)
-    let result = camaro.transform(xml, template_string)
+    const templateString = JSON.stringify(template)
+    let result = camaro.transform(xml, templateString)
 
     if (isEmptyObject(result)) {
         throw new TypeError('Invalid input: Malformed xml')
