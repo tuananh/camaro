@@ -20,20 +20,19 @@
 Here are the benchmarks:
 
 ```
-camaro x 606 ops/sec ±1.02% (84 runs sampled)
-rapidx2j x 175 ops/sec ±2.32% (78 runs sampled)
-xml2json x 19.54 ops/sec ±2.23% (36 runs sampled)
-xml2js x 32.90 ops/sec ±8.11% (59 runs sampled)
-fast-xml-parser x 154 ops/sec ±4.06% (64 runs sampled)
-nkit4nodejs x 80.14 ops/sec ±2.99% (68 runs sampled)
-xml-js x 28.51 ops/sec ±8.18% (53 runs sampled)
-libxmljs x 107 ops/sec ±18.57% (48 runs sampled)
+camaro x 809 ops/sec ±1.51% (86 runs sampled)
+rapidx2j x 204 ops/sec ±1.22% (81 runs sampled)
+xml2json x 53.73 ops/sec ±0.58% (68 runs sampled)
+xml2js x 40.57 ops/sec ±7.59% (56 runs sampled)
+fast-xml-parser x 148 ops/sec ±3.43% (74 runs sampled)
+xml-js x 33.38 ops/sec ±6.69% (60 runs sampled)
+libxmljs x 127 ops/sec ±15.36% (50 runs sampled)
 ```
 
 * Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
 The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
 
-* Benchmark run with Intel Core i5-5257U CPU @ 2.70GHz using Node v7.10.0
+* Benchmark run on MacBookPro14,1 - Intel Core i5 CPU @ 2.30GHz using Node v8.10.0.
 
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
 

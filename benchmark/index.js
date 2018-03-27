@@ -5,9 +5,8 @@ const x2j = require('rapidx2j')
 const xml2json = require('xml2json')
 const xml2js = require('xml2js').parseString
 const fastXmlParser = require('fast-xml-parser')
-const nkit = require('nkit4nodejs')
 const xmljs = require('xml-js')
-const libxmljs = require("libxmljs")
+const libxmljs = require('libxmljs')
 
 const suite = new benchmark.Suite()
 const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
@@ -58,21 +57,8 @@ suite.add('fast-xml-parser', function() {
     fastXmlParser.parse(xml)
 })
 
-suite.add('nkit4nodejs', function() {
-    const options = {
-        trim: true,
-        attrkey: '$',
-        textkey: '_',
-        explicit_array: true
-    }
-
-    const builder = new nkit.AnyXml2VarBuilder(options)
-    builder.feed(xml)
-    const result = builder.end()
-})
-
 suite.add('xml-js', function() {
-    const result = xmljs.xml2json(xml, {compact: true, spaces: 2})
+    const result = xmljs.xml2json(xml, { compact: true, spaces: 2 })
 })
 
 suite.add('libxmljs', function() {
