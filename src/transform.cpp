@@ -129,8 +129,7 @@ Napi::Array query_array(T &doc, json &node, const Napi::CallbackInfo &info) {
       for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
         walk(n, it.value(), obj, it.key(), info);
       }
-      const char *pkey = std::to_string(i).c_str();
-      tmp.Set(Napi::String::New(env, pkey), obj);
+      tmp.Set(i, obj);
     } else if (inner.is_string()) {
       string path = inner;
       ReturnType type = get_return_type((path));

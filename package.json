@@ -1,14 +1,14 @@
 {
   "name": "camaro",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
   "typings": "index.d.ts",
   "scripts": {
-    "test": "istanbul test ./node_modules/tape/bin/tape 'test/*test.js'",
-    "cover": "istanbul cover ./node_modules/tape/bin/tape 'test/*test.js'",
+    "test": "istanbul test ./node_modules/tape/bin/tape test/*.test.js",
+    "cover": "istanbul cover ./node_modules/tape/bin/tape test/*.test.js",
     "bench": "node benchmark",
     "install": "node-pre-gyp install --fallback-to-build"
   },
@@ -30,7 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "node-addon-api": "1.2.0",
-    "node-pre-gyp": "0.9.1"
+    "node-pre-gyp": "0.10.0"
   },
   "devDependencies": {
     "istanbul": "0.4.5",
