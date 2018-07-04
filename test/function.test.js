@@ -19,6 +19,10 @@ const xml = `
         <special>
             <item>twin/double@room (room only)</item>
         </special>
+        <list>
+            <item>item 1</item>
+            <item>item 2</item>
+        </list>
     </root>
 `
 
@@ -139,5 +143,21 @@ t.test('test function boolean()', (t) => {
     })
     t.equal(result.boolean, true, 'boolean should be true')
     t.equal(result.boolean_false, false, 'boolean_false should be false')
+    t.end()
+})
+
+t.test('test function string-join() with delimeter', (t) => {
+    const result = transform(xml, {
+        join: 'string-join(//list/item, ", ")'
+    })
+    t.equal(result.join, 'item 1, item 2')
+    t.end()
+})
+
+t.test('test function string-join() without delimeter', (t) => {
+    const result = transform(xml, {
+        join: 'string-join(//list/item)'
+    })
+    t.equal(result.join, 'item 1item 2')
     t.end()
 })
