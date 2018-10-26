@@ -42,7 +42,7 @@
   "binary": {
     "module_name": "camaro",
     "module_path": "./lib/binding/",
-    "host": "https://api.github.com/tuananh/camaro/releases/download/",
+    "host": "https://github.com/tuananh/camaro/releases/download/",
     "remote_path": "{version}"
   }
 }
