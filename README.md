@@ -4,12 +4,11 @@
 
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
 
-[![npm](https://img.shields.io/npm/v/camaro.svg?style=flat-square)](https://npm.im/camaro)
-[![Travis](https://img.shields.io/travis/tuananh/camaro/master.svg?label=Linux%20%26%20macOS%20build&style=flat-square)](https://travis-ci.org/tuananh/camaro)
-[![AppVeyor](https://img.shields.io/appveyor/ci/tuananh/camaro/master.svg?label=Windows%20build&style=flat-square)](https://ci.appveyor.com/project/tuananh/camaro)
-[![David](https://img.shields.io/david/tuananh/camaro.svg?style=flat-square)](https://david-dm.org/tuananh/camaro)
-[![TypeScript definitions on DefinitelyTyped](http://definitelytyped.org/badges/standard-flat.svg)](http://definitelytyped.org)
-[![npm](https://img.shields.io/npm/dt/camaro.svg?style=flat-square)](https://npm.im/camaro)
+[![npm](https://badgen.net/npm/v/camaro)](https://npm.im/camaro)
+[![Travis](https://badgen.net/travis/tuananh/camaro/master)](https://travis-ci.org/tuananh/camaro)
+[![AppVeyor](https://badgen.net/appveyor/ci/tuananh/camaro/master)](https://ci.appveyor.com/project/tuananh/camaro)
+[![TypeScript definitions on DefinitelyTyped](https://badgen.net/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
+[![npm](https://badgen.net/npm/dt/camaro)](https://npm.im/camaro)
 ## Features
 
 * Transform XML to JSON. Only take properties that you're interested in.
