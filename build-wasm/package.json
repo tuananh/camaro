@@ -1,0 +1,17 @@
+{
+  "name": "camaro",
+  "scripts": {
+    "install": "napa",
+    "build": "docker run --rm -v $(pwd):/src trzeci/emscripten ./build.sh"
+  },
+  "napa": {
+    "pugixml": "tuananh/pugixml#develop",
+    "json": "nlohmann/json#v3.5.0"
+  },
+  "devDependencies": {
+    "napa": "3.0.0"
+  },
+  "dependencies": {
+    "node-addon-api": "^1.6.2"
+  }
+}
