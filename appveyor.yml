@@ -2,7 +2,6 @@ version: 1.0.{build}-{branch}
 
 image:
   - Visual Studio 2015
-  # - Visual Studio 2017
 
 artifacts:
   - path: build\**\*.tar.gz
@@ -25,12 +24,13 @@ matrix:
 
 platform:
   - x64
+  - ARM
 
 # cache:
 #   - '%APPDATA%\npm-cache'
 
 install:
-  - ps: Install-Product node $env:nodejs_version $env:platform
+  - ps: Install-Product node $env:nodejs_version
   - git submodule update --init --recursive
   - npm config set spin false
   - npm i -g node-pre-gyp --production
