@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "istanbul": "0.4.5",
-    "tape": "4.10.0"
+    "tape": "4.10.1"
   },
   "bundledDependencies": [
     "node-pre-gyp"
