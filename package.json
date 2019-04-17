@@ -1,6 +1,6 @@
 {
   "name": "camaro",
-  "version": "3.0.15",
+  "version": "3.0.16",
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
@@ -29,12 +29,12 @@
   "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
   "license": "MIT",
   "dependencies": {
-    "node-addon-api": "1.6.2",
+    "node-addon-api": "1.6.3",
     "node-pre-gyp": "0.12.0"
   },
   "devDependencies": {
     "istanbul": "0.4.5",
-    "tape": "4.10.0"
+    "tape": "4.10.1"
   },
   "bundledDependencies": [
     "node-pre-gyp"

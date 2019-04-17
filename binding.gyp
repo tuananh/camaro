@@ -12,7 +12,7 @@
       '-std=c++11',
       '-fexceptions',
       '-Wall',
-      '-march=native',
+      '-mtune=native',
       '-Ofast',
       '-flto'
     ],
@@ -43,7 +43,7 @@
         '-stdlib=libc++',
         '-fexceptions',
         '-Wall',
-        '-march=native',
+        '-mtune=native',
         '-Ofast'
       ],
       'OTHER_LDFLAGS':[
