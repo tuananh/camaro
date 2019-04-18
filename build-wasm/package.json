@@ -2,7 +2,8 @@
   "name": "camaro",
   "scripts": {
     "install": "napa",
-    "build": "docker run --rm -v $(pwd):/src trzeci/emscripten ./build.sh"
+    "build": "docker run --rm -v $(pwd):/src trzeci/emscripten ./build.sh",
+    "clean": "rm camaro.js camaro.js.mem"
   },
   "napa": {
     "pugixml": "tuananh/pugixml#develop",

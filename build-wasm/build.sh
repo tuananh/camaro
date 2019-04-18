@@ -22,21 +22,7 @@ echo "============================================="
 )
 
 echo "============================================="
-echo "Compiling nlohmann/json"
-echo "============================================="
-(
-  emcc \
-    --bind \
-    ${OPTIMIZE} \
-    -s ALLOW_MEMORY_GROWTH=1 \
-    -s MODULARIZE=1 \
-    -s 'EXPORT_NAME="json"' \
-    -I node_modules/json/single_include/nlohmann \
-    -c node_modules/json/single_include/nlohmann/json.hpp
-)
-
-echo "============================================="
-echo "Compiling wasm module"
+echo "Compiling camaro wasm"
 echo "============================================="
 (
   emcc \
@@ -45,10 +31,10 @@ echo "============================================="
     -s ALLOW_MEMORY_GROWTH=1 \
     -s MODULARIZE=1 \
     -s 'EXPORT_NAME="camaro"' \
-    -I node_modules/pugixml/src \
-    -I node_modules/json/single_include/nlohmann \
     -I node_modules/node-addon-api \
     -I node_modules/node-addon-api/src \
+    -I node_modules/json/single_include/nlohmann \
+    -I node_modules/pugixml/src \
     -o ./camaro.js \
     --std=c++11 *.o \
     -x c++ \
