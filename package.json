@@ -30,7 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "node-addon-api": "1.6.3",
-    "node-pre-gyp": "0.12.0"
+    "node-pre-gyp": "0.13.0"
   },
   "devDependencies": {
     "istanbul": "0.4.5",
