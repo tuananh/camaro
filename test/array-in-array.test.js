@@ -1,5 +1,5 @@
 const t = require('tape')
-const transform = require('../')
+const { transform } = require('../')
 
 const xml = `
     <element>
@@ -24,14 +24,15 @@ const xml = `
     </element>
 `
 
-t.test('array-in-array test .// should only match nodes inside current node', (t) => {
+t.test('array-in-array test .// should only match nodes inside current node', async (t) => {
     const template = {
         elements: ['//element', {
             items: ['.//item', '.']
         }]
     }
 
-    const result = transform(xml, template)
+    const result = await transform(xml, template)
+
     t.equal(result.elements[0].items.length, 3, 'elements[0].items should have only 3 elements')
     t.equal(result.elements[0].items[0], 'outer0.arr0.0', 'outer0.arr0.0')
     t.equal(result.elements[0].items[1], 'outer0.arr0.1', 'outer0.arr0.1')

@@ -1,0 +1,29 @@
+<!doctype html>
+<script src='/dist/camaro.js'></script>
+<script>
+    const Module = camaro();
+    Module.onRuntimeInitialized = async _ => {
+        const t = {
+            string: '/root/string',
+            arr: ['/root/arr/item', {
+                data: '.'
+            }],
+            bool: 'boolean(/root/string = "test")'
+        }
+        const { transform } = Module
+        const output = transform(
+                `<root>
+                    <string>test</string>
+                    <arr>
+                        <item>1</item>
+                        <item>2</item>
+                        <item>3</item>
+                    </arr>
+                </root>
+                `
+                , JSON.stringify(t)
+            )
+
+        document.write('<code>' + JSON.stringify(output, null, '\t') + '</code>');
+    };
+</script>

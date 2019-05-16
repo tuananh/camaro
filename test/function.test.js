@@ -1,5 +1,5 @@
 const t = require('tape')
-const transform = require('../')
+const { transform } = require('../')
 const isWin = process.platform === 'win32'
 
 const xml = `
@@ -27,8 +27,8 @@ const xml = `
     </root>
 `
 
-t.test('test function upper-case()', (t) => {
-    const result = transform(xml, {
+t.test('test function upper-case()', async (t) => {
+    const result = await transform(xml, {
         upperCase: ['//items/item', 'upper-case(.)']
     })
     result.upperCase.forEach(u => {
@@ -37,8 +37,8 @@ t.test('test function upper-case()', (t) => {
     t.end()
 })
 
-t.test('test function lower-case()', (t) => {
-    const result = transform(xml, {
+t.test('test function lower-case()', async (t) => {
+    const result = await transform(xml, {
         lowerCase: ['//items/item', 'lower-case(.)']
     })
     result.lowerCase.forEach(u => {
@@ -47,8 +47,8 @@ t.test('test function lower-case()', (t) => {
     t.end()
 })
 
-t.test('test function title-case()', (t) => {
-    const result = transform(xml, {
+t.test('test function title-case()', async (t) => {
+    const result = await transform(xml, {
         titleCase: ['//items/item', 'title-case(.)']
     })
     result.titleCase.forEach(u => {
@@ -57,8 +57,8 @@ t.test('test function title-case()', (t) => {
     t.end()
 })
 
-t.test('test function title-case() unicode', (t) => {
-    const result = transform(xml, {
+t.test('test function title-case() unicode', async (t) => {
+    const result = await transform(xml, {
         titleCase: ['//unicode/item', 'title-case(.)']
     })
     result.titleCase.forEach(u => {
@@ -67,8 +67,8 @@ t.test('test function title-case() unicode', (t) => {
     t.end()
 })
 
-t.test('test function title-case() upper after symbols', (t) => {
-    const result = transform(xml, {
+t.test('test function title-case() upper after symbols', async (t) => {
+    const result = await transform(xml, {
         titleCase: ['//special/item', 'title-case(.)']
     })
     result.titleCase.forEach(u => {
@@ -77,8 +77,8 @@ t.test('test function title-case() upper after symbols', (t) => {
     t.end()
 })
 
-t.test('test function camel-case()', (t) => {
-    const result = transform(xml, {
+t.test('test function camel-case()', async (t) => {
+    const result = await transform(xml, {
         camelCase: ['//items/item', 'camel-case(.)']
     })
     result.camelCase.forEach(u => {
@@ -87,8 +87,8 @@ t.test('test function camel-case()', (t) => {
     t.end()
 })
 
-t.test('test function snake-case()', (t) => {
-    const result = transform(xml, {
+t.test('test function snake-case()', async (t) => {
+    const result = await transform(xml, {
         snakeCase: ['//items/item', 'snake-case(.)']
     })
     result.snakeCase.forEach(u => {
@@ -97,8 +97,8 @@ t.test('test function snake-case()', (t) => {
     t.end()
 })
 
-t.test('test nested function calls', (t) => {
-    const result = transform(xml, {
+t.test('test nested function calls', async (t) => {
+    const result = await transform(xml, {
         snakeCase: ['//items/item', 'snake-case(lower-case(.))']
     })
     result.snakeCase.forEach(u => {
@@ -107,38 +107,38 @@ t.test('test nested function calls', (t) => {
     t.end()
 })
 
-t.test('test function round()', (t) => {
-    const result = transform(xml, { round: 'round(root/single)' })
+t.test('test function round()', async (t) => {
+    const result = await transform(xml, { round: 'round(root/single)' })
     t.equal(result.round, 20)
     t.end()
 })
 
-t.test('test function floor()', (t) => {
-    const result = transform(xml, { floor: 'floor(root/single)' })
+t.test('test function floor()', async (t) => {
+    const result = await transform(xml, { floor: 'floor(root/single)' })
     t.equal(result.floor, 20)
     t.end()
 })
 
-t.test('test function ceiling()', (t) => {
-    const result = transform(xml, { ceiling: 'ceiling(root/single)' })
+t.test('test function ceiling()', async (t) => {
+    const result = await transform(xml, { ceiling: 'ceiling(root/single)' })
     t.equal(result.ceiling, 21)
     t.end()
 })
 
-t.test('test function sum()', (t) => {
-    const result = transform(xml, { sum: 'sum(root/number)' })
+t.test('test function sum()', async (t) => {
+    const result = await transform(xml, { sum: 'sum(root/number)' })
     t.equal(result.sum, 30.5)
     t.end()
 })
 
-t.test('test function count()', (t) => {
-    const result = transform(xml, { count: 'count(root/number)' })
+t.test('test function count()', async (t) => {
+    const result = await transform(xml, { count: 'count(root/number)' })
     t.equal(result.count, 2)
     t.end()
 })
 
-t.test('test function boolean()', (t) => {
-    const result = transform(xml, {
+t.test('test function boolean()', async (t) => {
+    const result = await transform(xml, {
         boolean: 'boolean(root/boolean = "TrUe")',
         boolean_false: 'boolean(root/boolean = "true")'
     })
@@ -149,16 +149,16 @@ t.test('test function boolean()', (t) => {
 
 // TODO: figure out why it's failing on windows later
 if (!isWin) {
-    t.test('test function string-join() with delimeter', (t) => {
-        const result = transform(xml, {
+    t.test('test function string-join() with delimeter', async (t) => {
+        const result = await transform(xml, {
             join: 'string-join(//list/item, ", ")'
         })
         t.equal(result.join, 'item 1, item 2')
         t.end()
     })
 
-    t.test('test function string-join() without delimeter', (t) => {
-        const result = transform(xml, {
+    t.test('test function string-join() without delimeter', async (t) => {
+        const result = await transform(xml, {
             join: 'string-join(//list/item)'
         })
         t.equal(result.join, 'item 1item 2')

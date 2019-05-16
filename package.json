@@ -1,16 +1,16 @@
 {
   "name": "camaro",
-  "version": "3.0.16",
+  "version": "4.0.0-alpha.0",
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
   "typings": "index.d.ts",
   "scripts": {
-    "test": "istanbul test ./node_modules/tape/bin/tape test/*.test.js",
-    "cover": "istanbul cover ./node_modules/tape/bin/tape test/*.test.js",
+    "test": "tape test/*.test.js",
     "bench": "node benchmark",
-    "install": "node-pre-gyp install --fallback-to-build"
+    "install": "napa",
+    "build": "docker run --rm -v $(pwd):/src trzeci/emscripten ./build.sh"
   },
   "repository": {
     "type": "git",
@@ -28,21 +28,12 @@
   ],
   "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
   "license": "MIT",
-  "dependencies": {
-    "node-addon-api": "1.6.3",
-    "node-pre-gyp": "0.12.0"
+  "napa": {
+    "pugixml": "tuananh/pugixml#develop",
+    "json": "nlohmann/json#v3.5.0"
   },
   "devDependencies": {
-    "istanbul": "0.4.5",
+    "napa": "3.0.0",
     "tape": "4.10.1"
-  },
-  "bundledDependencies": [
-    "node-pre-gyp"
-  ],
-  "binary": {
-    "module_name": "camaro",
-    "module_path": "./lib/binding/",
-    "host": "https://github.com/tuananh/camaro/releases/download/",
-    "remote_path": "{version}"
   }
 }
