@@ -26,6 +26,7 @@ echo "2/2 Compiling camaro wasm bindings"
     -s WASM=1 \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s MODULARIZE=1 \
+    -s ASSERTIONS=0 \
     -s 'EXPORT_NAME="camaro"' \
     -I node_modules/pugixml/src \
     -I node_modules/json/single_include/nlohmann \

@@ -1,6 +1,5 @@
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
-#include <iostream>
 #include "../node_modules/pugixml/src/pugixml.hpp"
 #include "../node_modules/json/single_include/nlohmann/json.hpp"
 
@@ -205,10 +204,10 @@ struct simple_walker:pugi::xml_tree_walker {
 
   virtual bool for_each(pugi::xml_node& node) {
     for (int i = 0; i < depth(); ++i) {
-      std::cout << "  "; // indentation
+      // std::cout << "  "; // indentation
     }
 
-    std::cout << node_types[node.type()] << ": name='" << node.name() << "', value='" << node.value() << "'\n";
+    // std::cout << node_types[node.type()] << ": name='" << node.name() << "', value='" << node.value() << "'\n";
 
     return true; // continue traversal
   }
