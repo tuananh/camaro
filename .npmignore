@@ -15,6 +15,5 @@ lib
 *.png
 build.sh
 dist/pugixml.o
-dist/camaro.wasm
 # dont need src folder since we publish dist folder
 src
