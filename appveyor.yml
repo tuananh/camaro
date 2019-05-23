@@ -3,14 +3,8 @@ version: 1.0.{build}-{branch}
 image:
   - Visual Studio 2015
 
-artifacts:
-  - path: build\**\*.tar.gz
-    name: camaro
-
 build: off
 environment:
-  github_release_token:
-    secure: PbRZg8hVpAS5WWNZYY461xJOOgZLaDIR8QGM5fX+o11JCLoR+ccdwkbBHldTBcBx
   matrix:
     - nodejs_version: "6"
     - nodejs_version: "7"
@@ -24,7 +18,6 @@ matrix:
 
 platform:
   - x64
-  - ARM
 
 # cache:
 #   - '%APPDATA%\npm-cache'
@@ -38,16 +31,3 @@ install:
 
 test_script:
   - npm test
-
-after_test:
-  - node-pre-gyp package 2>&1
-
-deploy:
-  - provider: GitHub
-    release: $(APPVEYOR_REPO_TAG_NAME)
-    artifact: camaro
-    auth_token: $(github_release_token)
-    draft: true
-    prerelease: false
-    on:
-      appveyor_repo_tag: true
