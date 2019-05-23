@@ -13,19 +13,26 @@
 
 * Transform XML to JSON. Only take properties that you're interested in.
 * Output is a ready to use JS object.
-* Work on all major platforms (OS X, Linux and Windows). See Travis CI and AppVeyor build status for details.
+* Written in C++ and compiled down to WebAssembly so no compilation needed.
+* Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
+* AWS Lambda friendly.
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 
-Here are the benchmarks:
+## Upgrading from v3 notes:
+
+- camaro v4 is slow down quite a bit since switching to WebAssembly. It's still the fastest but slower by big margin. WebAssembly and Emscripten are rather new to me so bare with me while I'm figuring out the performance issue. If you need pure speed, just use camaro v3.
+- `transform()` is now an async function.
+- Plan to add `toJson()` function to convert the whole XML input.
+
+## Benchmark
 
 ```
-camaro x 809 ops/sec ±1.51% (86 runs sampled)
-rapidx2j x 204 ops/sec ±1.22% (81 runs sampled)
-xml2json x 53.73 ops/sec ±0.58% (68 runs sampled)
-xml2js x 40.57 ops/sec ±7.59% (56 runs sampled)
-fast-xml-parser x 148 ops/sec ±3.43% (74 runs sampled)
-xml-js x 33.38 ops/sec ±6.69% (60 runs sampled)
-libxmljs x 127 ops/sec ±15.36% (50 runs sampled)
+camaro x 261 ops/sec ±0.50% (83 runs sampled)
+rapidx2j x 228 ops/sec ±1.01% (88 runs sampled)
+xml2json x 48.78 ops/sec ±1.45% (63 runs sampled)
+xml2js x 38.89 ops/sec ±11.08% (55 runs sampled)
+fast-xml-parser x 221 ops/sec ±1.70% (85 runs sampled)
+xml-js x 35.83 ops/sec ±6.45% (63 runs sampled)
 ```
 
 * Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
@@ -34,8 +41,6 @@ The whole reason of me creating this is because most of the time, I'm just inter
 * Benchmark run on MacBookPro14,1 - Intel Core i5 CPU @ 2.30GHz using Node v8.10.0.
 
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
-
-* Performance on small XML strings is not very good due to crossing between JS and C++ is expensive.
 
 ![intro](intro.png)
 
@@ -60,7 +65,7 @@ The rest are pretty much vanilla XPath 1.0.
 
 
 ```js
-const transform = require('camaro')
+const { transform } = require('camaro')
 const fs = require('fs')
 
 const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
@@ -82,7 +87,12 @@ const template = {
     session_id: '/HotelListResponse/customerSessionId'
 }
 
-const result = transform(xml, template)
+;(async function () {
+    const result = await transform(xml, template)
+    console.log(result)
+})()
+
+
 ```
 
 ### Namespaces
@@ -93,9 +103,7 @@ By default, a path `'//HotelSummary'` will transform all `HotelSummary` elements
 
 ## Using camaro on AWS Lambda
 
-In order to use `camaro` on AWS Lambda, you should download a copy of prebuilt camaro from [Releases](https://github.com/tuananh/camaro/releases) and put to this folder path `node_modules/camaro/lib/binding/camaro.node`.
-
-As of currently, AWS Lambda only supports node 6 on Linux so you're looking for `camaro-v2.1.0-node-v48-linux-x64.tar.gz`.
+Just use it as is. Since v4, camaro is a WebAssembly module.
 
 ## Licence
 
