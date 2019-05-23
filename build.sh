@@ -34,7 +34,7 @@ echo "2/2 Compiling camaro wasm bindings"
     -o dist/camaro.js \
     -Wno-deprecated-register \
     -Wno-writable-strings \
-    -x c++ -std=c++11 dist/*.o \
+    -x c++ -std=c++17 dist/*.o \
     src/camaro.cpp
 )
 

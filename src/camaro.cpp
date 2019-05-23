@@ -14,64 +14,54 @@ enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 template <typename T>
 void walk(T &doc, json &n, json &output, string key);
 
-inline bool string_contains(string to_check, string prefix) {
-  return to_check.size() >= prefix.size() &&
-         to_check.compare(0, prefix.size(), prefix) == 0;
-}
-
-inline char charAt(string &str, size_t pos) {
-  if (str.size() > pos) {
-    return str.at(pos);
-  } else {
-    return '\0';
-  }
+inline bool startWith(string to_check, string prefix) {
+  return to_check.rfind(prefix, 0) == 0;
 }
 
 ReturnType get_return_type(string &path) {
-  const char ch = charAt(path, 0);
+  const char ch = path.at(0);
   ReturnType t = T_STRING;
   switch (ch) {
-  case 'b':
-    if (string_contains(path, "boolean(")) {
-      t = T_BOOLEAN;
+    case 'b':
+      if (startWith(path, "boolean(")) {
+        t = T_BOOLEAN;
+      }
+      break;
+    case 'c':
+      if (startWith(path, "count(") || startWith(path, "ceiling(")) {
+        t = T_NUMBER;
+      }
+      break;
+    case 'f':
+      if (startWith(path, "floor(")) {
+        t = T_NUMBER;
+      }
+      break;
+    case 'n':
+      if (startWith(path, "number(")) {
+        t = T_NUMBER;
+      }
+      break;
+    case 'r':
+      if (startWith(path, "round(")) {
+        t = T_NUMBER;
+      }
+      break;
+    case 's':
+      if (startWith(path, "sum(")) {
+        t = T_NUMBER;
+      }
+      break;
+    default:
+      t = T_STRING;
+      break;
     }
-    break;
-  case 'c':
-    if (string_contains(path, "count(") || string_contains(path, "ceiling(")) {
-      t = T_NUMBER;
-    }
-    break;
-  case 'f':
-    if (string_contains(path, "floor(")) {
-      t = T_NUMBER;
-    }
-    break;
-  case 'n':
-    if (string_contains(path, "number(")) {
-      t = T_NUMBER;
-    }
-    break;
-  case 'r':
-    if (string_contains(path, "round(")) {
-      t = T_NUMBER;
-    }
-    break;
-  case 's':
-    if (string_contains(path, "sum(")) {
-      t = T_NUMBER;
-    }
-    break;
-  default:
-    t = T_STRING;
-    break;
-  }
 
   return t;
 }
 
 template <typename T>
 bool query_boolean(T &xnode, json &j) {
-  string path = j;
   xquery query(j.get<string>().c_str());
   return query.evaluate_boolean(xnode);
 }
