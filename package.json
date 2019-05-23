@@ -1,6 +1,6 @@
 {
   "name": "camaro",
-  "version": "4.0.0-alpha.0",
+  "version": "4.0.0-alpha.5",
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
@@ -9,7 +9,7 @@
   "scripts": {
     "test": "tape test/*.test.js",
     "bench": "node benchmark",
-    "install": "napa",
+    "install-deps": "napa",
     "build": "docker run --rm -v $(pwd):/src trzeci/emscripten ./build.sh"
   },
   "repository": {
