@@ -22,9 +22,8 @@ platform:
 
 install:
   - ps: Install-Product node $env:nodejs_version
-  - git submodule update --init --recursive
+  - npm config set progress false
   - npm config set spin false
-  - npm i -g node-pre-gyp --production
   - npm install
 
 test_script:
