@@ -17,14 +17,17 @@
 * Output is a ready to use JS object.
 * Written in C++ and compiled down to WebAssembly so no compilation needed.
 * Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
-* AWS Lambda friendly.
+* No need to build binary whenever a new Node version released.
+* AWS Lambdafriendly (or serverless in general).
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 
-## 🚧 Upgrading from v3 notes 🚧
+## 🚧 Upgrading notes from version 3 🚧
 
-- camaro v4 is slow down quite a bit since switching to WebAssembly. It's still the fastest but slower by big margin. WebAssembly and Emscripten are rather new to me so bare with me while I'm figuring out the performance issue. If you need pure speed, just use camaro v3.
-- `transform()` is now an async function.
-- Plan to add `toJson()` function to convert the whole XML input.
+- camaro v4 slows down quite a bit since switching to WebAssembly. It's still the fastest but slower by big margin. WebAssembly and Emscripten are rather new to me so bare with me while I'm figuring out the performance issue. If you need pure speed, just use camaro v3.
+- 🚨BREAKING: `transform()` is now an async function.
+- 🚨BREAKING: change the way transform is imported `const { transform } = require('camaro')`
+- plan to add `toJson()` function to convert the whole XML input.
+- plan to add `prettyPrint()` to pretty print XML.
 
 ## 🔥 Benchmark
 
