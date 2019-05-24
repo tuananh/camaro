@@ -11,7 +11,7 @@
 [![TypeScript definitions on DefinitelyTyped](https://badgen.net/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
 [![npm](https://badgen.net/npm/dt/camaro)](https://npm.im/camaro)
 
-## Features
+## 🤘 Features
 
 * Transform XML to JSON. Only take properties that you're interested in.
 * Output is a ready to use JS object.
@@ -20,13 +20,13 @@
 * AWS Lambda friendly.
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 
-## Upgrading from v3 notes:
+## 🚧 Upgrading from v3 notes 🚧
 
 - camaro v4 is slow down quite a bit since switching to WebAssembly. It's still the fastest but slower by big margin. WebAssembly and Emscripten are rather new to me so bare with me while I'm figuring out the performance issue. If you need pure speed, just use camaro v3.
 - `transform()` is now an async function.
 - Plan to add `toJson()` function to convert the whole XML input.
 
-## Benchmark
+## 🔥 Benchmark
 
 ```
 camaro x 261 ops/sec ±0.50% (83 runs sampled)
