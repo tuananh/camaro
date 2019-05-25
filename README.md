@@ -18,7 +18,7 @@
 * Written in C++ and compiled down to WebAssembly so no compilation needed.
 * Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
 * No need to build binary whenever a new Node version released.
-* AWS Lambdafriendly (or serverless in general).
+* AWS Lambda friendly (or serverless in general).
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 * Small footprint (Zero dependencies).
 
