@@ -1,8 +1,8 @@
 const fs = require('fs')
 const t = require('tape')
-const transform = require('../')
+const { transform } = require('../')
 
-t.test('basic test', (t) => {
+t.test('basic test', async (t) => {
     const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
     const template = {
         cache_key: '/HotelListResponse/cacheKey',
@@ -24,7 +24,7 @@ t.test('basic test', (t) => {
         empty_array: []
     }
 
-    const result = transform(xml, template)
+    const result = await transform(xml, template)
     t.equal(typeof result, 'object', 'result is expected to be object')
     t.equal(result.cache_key, '-48a4e19f:15bec159775:50eb', 'parse cache_key ok')
     t.equal(result.session_id, 'yuvb3jdpifp2t13y43pass2p', 'parse session_id ok')
