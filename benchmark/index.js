@@ -1,17 +1,17 @@
 const benchmark = require('benchmark')
 const fs = require('fs')
-const camaro = require('../')
+const { transform } = require('../')
 const x2j = require('rapidx2j')
 const xml2json = require('xml2json')
 const xml2js = require('xml2js').parseString
 const fastXmlParser = require('fast-xml-parser')
 const xmljs = require('xml-js')
-const libxmljs = require('libxmljs')
+// const libxmljs = require('libxmljs')
 
 const suite = new benchmark.Suite()
 const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
 
-suite.add('camaro', function() {
+suite.add('camaro', function(deferred) {
     const template = {
         cache_key: '/HotelListResponse/cacheKey',
         hotels: [
@@ -38,8 +38,8 @@ suite.add('camaro', function() {
         ],
         session_id: '/HotelListResponse/customerSessionId'
     }
-    camaro(xml, template)
-})
+    transform(xml, template).then(_ => deferred.resolve())
+}, { defer: true })
 
 suite.add('rapidx2j', function() {
     x2j.parse(xml)
@@ -58,12 +58,12 @@ suite.add('fast-xml-parser', function() {
 })
 
 suite.add('xml-js', function() {
-    const result = xmljs.xml2json(xml, { compact: true, spaces: 2 })
+    xmljs.xml2json(xml, { compact: true, spaces: 2 })
 })
 
-suite.add('libxmljs', function() {
-    const xmlDoc = libxmljs.parseXml(xml)
-})
+// suite.add('libxmljs', function() {
+//     const xmlDoc = libxmljs.parseXml(xml)
+// })
 
 suite.on('cycle', cycle)
 suite.run()

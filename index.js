@@ -1,7 +1,5 @@
-const binary = require('node-pre-gyp')
-const path = require('path')
-const bindingPath = binary.find(path.resolve(path.join(__dirname, './package.json')))
-const camaro = require(bindingPath)
+const resolvePath = './dist/camaro'
+const Module = require(resolvePath)
 
 function isNonEmptyString(str) {
     return typeof str === 'string' && str.length > 0
@@ -21,7 +19,19 @@ function isEmptyObject(obj) {
     return JSON.stringify(obj) === JSON.stringify({})
 }
 
-function transform(xml, template) {
+const resolveCache = new Map()
+const instance = Module()
+instance.onRuntimeInitialized = () => {
+    resolveCache.set(resolvePath, instance)
+}
+
+/**
+ * convert xml to json base on the template object
+ * @param {string} xml xml string
+ * @param {object} template template object
+ * @returns {object} xml converted to json object based on the template
+ */
+async function transform(xml, template) {
     if (!isNonEmptyString(xml)) {
         throw new TypeError('1st argument (xml) must be a non-empty string')
     }
@@ -31,13 +41,42 @@ function transform(xml, template) {
     }
 
     const templateString = JSON.stringify(template)
-    let result = camaro.transform(xml, templateString)
-
-    if (isEmptyObject(result)) {
-        throw new TypeError('Invalid input: Malformed xml')
-    }
-
-    return result
+    return new Promise((resolve) => {
+        const cachedInstance = resolveCache.get(resolvePath)
+        if (!cachedInstance) {
+            instance.onRuntimeInitialized = () => {
+                resolveCache.set(resolvePath, instance)
+                const result = instance.transform(xml, templateString)
+                resolve(JSON.parse(result))
+            }
+        } else {
+            const result = cachedInstance.transform(xml, templateString)
+            resolve(JSON.parse(result))
+        }
+    })
 }
 
-module.exports = transform
+/**
+ * convert xml to json
+ * @param {string} xml xml string
+ * @returns {object} json object converted from the input xml
+ */
+async function toJson(xml) {
+    if (!isNonEmptyString(xml)) {
+        throw new TypeError('expecting xml input to be non-empty string')
+    }
+
+    return new Promise((resolve) => {
+        const cachedInstance = resolveCache.get(resolvePath)
+        if (!cachedInstance) {
+            instance.onRuntimeInitialized = () => {
+                resolveCache.set(resolvePath, instance)
+                resolve(instance.toJson(xml))
+            }
+        } else {
+            resolve(cachedInstance.toJson(xml))
+        }
+    })
+}
+
+module.exports = { transform, toJson }
