@@ -20,6 +20,7 @@
 * No need to build binary whenever a new Node version released.
 * AWS Lambdafriendly (or serverless in general).
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
+* Small footprint (Zero dependencies).
 
 ## 🚧 Upgrading notes from version 3 🚧
 
