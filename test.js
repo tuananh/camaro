@@ -1,6 +1,4 @@
-const transform = require('./dist/camaro')
-
-console.log(transform);
+const {transform} = require('./')
 
 ;(async function () {
     const xml = '<root>world</root>'
