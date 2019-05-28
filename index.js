@@ -45,11 +45,11 @@ async function transform(xml, template) {
             instance.onRuntimeInitialized = () => {
                 cachedInstance = instance
                 const result = instance.transform(xml, templateString)
-                resolve(JSON.parse(result))
+                resolve(result)
             }
         } else {
             const result = cachedInstance.transform(xml, templateString)
-            resolve(JSON.parse(result))
+            resolve(result)
         }
     })
 }

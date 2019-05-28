@@ -89,7 +89,6 @@ double query_number(T &xnode, json &j) {
 
 template <typename T>
 val query_array(T &doc, json &node) {
-  // json arr = json::array();
   std::vector<val> arr;
 
   // a special case for backward compatible with xpath-object-transform
@@ -106,27 +105,22 @@ val query_array(T &doc, json &node) {
     auto inner = node[1];
 
     if (inner.is_object()) {
-      // json obj;
       val obj = val::object();
       for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
         walk(n, it.value(), obj, it.key());
       }
       arr.push_back(obj);
-      // arr.insert(arr.begin() + i, obj);
     } else if (inner.is_string()) {
       string path = inner;
       ReturnType type = get_return_type((path));
       if (type == T_STRING) {
         arr.push_back(val(query_string(n, inner)));
-        // arr.insert(arr.begin() + i, query_string(n, inner));
       }
       if (type == T_NUMBER) {
         arr.push_back(val(query_number(n, inner)));
-        // arr.insert(arr.begin() + i, query_number(n, inner));
       }
       if (type == T_BOOLEAN) {
         arr.push_back(val(query_boolean(n, inner)));
-        // arr.insert(arr.begin() + i, query_boolean(n, inner));
       }
     }
   }
@@ -151,24 +145,19 @@ template <typename T1, typename T2>
 void walk(T1 &doc, json &n, T2 &output, string key) {
   if (n.is_array()) {
     output.set(key, query_array(doc, n));
-    // output[key] = query_array(doc, n);
   } else if (n.is_object()) {
     output.set(key, query_object(doc, n));
-    // output[key] = query_object(doc, n);
   } else if (n.is_string()) {
     string path = n;
     ReturnType type = get_return_type(path);
     if (type == T_NUMBER) {
       output.set(key, query_number(doc, n));
-      // output[key] = query_number(doc, n);
     }
     if (type == T_STRING) {
       output.set(key, query_string(doc, n));
-      // output[key] = query_string(doc, n);
     }
     if (type == T_BOOLEAN) {
       output.set(key, query_boolean(doc, n));
-      // output[key] = query_boolean(doc, n);
     }
   }
 }
