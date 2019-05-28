@@ -1,5 +1,4 @@
-const resolvePath = './dist/camaro'
-const Module = require(resolvePath)
+const Module = require('./dist/camaro')
 
 function isNonEmptyString(str) {
     return typeof str === 'string' && str.length > 0
@@ -19,10 +18,10 @@ function isEmptyObject(obj) {
     return JSON.stringify(obj) === JSON.stringify({})
 }
 
-const resolveCache = new Map()
+let cachedInstance
 const instance = Module()
 instance.onRuntimeInitialized = () => {
-    resolveCache.set(resolvePath, instance)
+    cachedInstance = instance
 }
 
 /**
@@ -42,16 +41,15 @@ async function transform(xml, template) {
 
     const templateString = JSON.stringify(template)
     return new Promise((resolve) => {
-        const cachedInstance = resolveCache.get(resolvePath)
         if (!cachedInstance) {
             instance.onRuntimeInitialized = () => {
-                resolveCache.set(resolvePath, instance)
+                cachedInstance = instance
                 const result = instance.transform(xml, templateString)
-                resolve(JSON.parse(result))
+                resolve(result)
             }
         } else {
             const result = cachedInstance.transform(xml, templateString)
-            resolve(JSON.parse(result))
+            resolve(result)
         }
     })
 }
@@ -67,10 +65,9 @@ async function toJson(xml) {
     }
 
     return new Promise((resolve) => {
-        const cachedInstance = resolveCache.get(resolvePath)
         if (!cachedInstance) {
             instance.onRuntimeInitialized = () => {
-                resolveCache.set(resolvePath, instance)
+                cachedInstance = instance
                 resolve(instance.toJson(xml))
             }
         } else {

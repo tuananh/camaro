@@ -5,7 +5,7 @@
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
 
 [![npm](https://badgen.net/npm/v/camaro)](https://npm.im/camaro)
-![npm bundle size](https://img.shields.io/bundlephobia/minzip/camaro.svg)
+![npm bundle size](https://badgen.net/packagephobia/publish/camaro)
 [![Travis](https://badgen.net/travis/tuananh/camaro/master)](https://travis-ci.org/tuananh/camaro)
 [![AppVeyor](https://badgen.net/appveyor/ci/tuananh/camaro/master)](https://ci.appveyor.com/project/tuananh/camaro)
 [![TypeScript definitions on DefinitelyTyped](https://badgen.net/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
@@ -18,7 +18,7 @@
 * Written in C++ and compiled down to WebAssembly so no compilation needed.
 * Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
 * No need to build binary whenever a new Node version released.
-* AWS Lambdafriendly (or serverless in general).
+* AWS Lambda friendly (or serverless in general).
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 * Small footprint (Zero dependencies).
 
@@ -33,12 +33,12 @@
 ## 🔥 Benchmark
 
 ```
-camaro x 261 ops/sec ±0.50% (83 runs sampled)
-rapidx2j x 228 ops/sec ±1.01% (88 runs sampled)
-xml2json x 48.78 ops/sec ±1.45% (63 runs sampled)
-xml2js x 38.89 ops/sec ±11.08% (55 runs sampled)
-fast-xml-parser x 221 ops/sec ±1.70% (85 runs sampled)
-xml-js x 35.83 ops/sec ±6.45% (63 runs sampled)
+camaro x 287 ops/sec ±0.74% (79 runs sampled)
+rapidx2j x 233 ops/sec ±0.49% (87 runs sampled)
+xml2json x 50.36 ops/sec ±1.08% (65 runs sampled)
+xml2js x 40.71 ops/sec ±8.94% (56 runs sampled)
+fast-xml-parser x 227 ops/sec ±1.07% (88 runs sampled)
+xml-js x 38.52 ops/sec ±7.82% (53 runs sampled)
 ```
 
 * Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
