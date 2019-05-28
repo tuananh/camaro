@@ -11,8 +11,8 @@ using nodeset = pugi::xpath_node_set;
 
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
-template <typename T>
-void walk(T &doc, json &n, json &output, string key);
+template <typename T1, typename T2>
+void walk(T1 &doc, json &n, T2 &output, string key);
 
 inline bool startWith(string to_check, string prefix) {
   return to_check.rfind(prefix, 0) == 0;
@@ -88,12 +88,13 @@ double query_number(T &xnode, json &j) {
 }
 
 template <typename T>
-json query_array(T &doc, json &node) {
-  json arr = json::array();
+val query_array(T &doc, json &node) {
+  // json arr = json::array();
+  std::vector<val> arr;
 
   // a special case for backward compatible with xpath-object-transform
   if (node.empty()) {
-    return arr;
+    return val::array(arr);
   }
 
   string base_path = node[0].get<string>();
@@ -105,32 +106,38 @@ json query_array(T &doc, json &node) {
     auto inner = node[1];
 
     if (inner.is_object()) {
-      json obj;
+      // json obj;
+      val obj = val::object();
       for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
         walk(n, it.value(), obj, it.key());
       }
-      arr.insert(arr.begin() + i, obj);
+      arr.push_back(obj);
+      // arr.insert(arr.begin() + i, obj);
     } else if (inner.is_string()) {
       string path = inner;
       ReturnType type = get_return_type((path));
       if (type == T_STRING) {
-        arr.insert(arr.begin() + i, query_string(n, inner));
+        arr.push_back(val(query_string(n, inner)));
+        // arr.insert(arr.begin() + i, query_string(n, inner));
       }
       if (type == T_NUMBER) {
-        arr.insert(arr.begin() + i, query_number(n, inner));
+        arr.push_back(val(query_number(n, inner)));
+        // arr.insert(arr.begin() + i, query_number(n, inner));
       }
       if (type == T_BOOLEAN) {
-        arr.insert(arr.begin() + i, query_boolean(n, inner));
+        arr.push_back(val(query_boolean(n, inner)));
+        // arr.insert(arr.begin() + i, query_boolean(n, inner));
       }
     }
   }
 
-  return arr;
+  // return arr;
+  return val::array(arr);
 }
 
 template <typename T>
-json query_object(T &doc, json &node) {
-  json output;
+val query_object(T &doc, json &node) {
+  val output = val::object();
 
   for (json::iterator it = node.begin(); it != node.end(); ++it) {
     string key = it.key();
@@ -140,30 +147,35 @@ json query_object(T &doc, json &node) {
   return output;
 }
 
-template <typename T>
-void walk(T &doc, json &n, json &output, string key) {
+template <typename T1, typename T2>
+void walk(T1 &doc, json &n, T2 &output, string key) {
   if (n.is_array()) {
-    output[key] = query_array(doc, n);
+    output.set(key, query_array(doc, n));
+    // output[key] = query_array(doc, n);
   } else if (n.is_object()) {
-    output[key] = query_object(doc, n);
+    output.set(key, query_object(doc, n));
+    // output[key] = query_object(doc, n);
   } else if (n.is_string()) {
     string path = n;
     ReturnType type = get_return_type(path);
     if (type == T_NUMBER) {
-      output[key] = query_number(doc, n);
+      output.set(key, query_number(doc, n));
+      // output[key] = query_number(doc, n);
     }
     if (type == T_STRING) {
-      output[key] = query_string(doc, n);
+      output.set(key, query_string(doc, n));
+      // output[key] = query_string(doc, n);
     }
     if (type == T_BOOLEAN) {
-      output[key] = query_boolean(doc, n);
+      output.set(key, query_boolean(doc, n));
+      // output[key] = query_boolean(doc, n);
     }
   }
 }
 
-string transform(string xml, string json_template) {
+val transform(string xml, string json_template) {
   pugi::xml_document doc;
-  json output;
+  val output = val::object();
 
   if (doc.load_string(xml.c_str())) {
     json j = json::parse(json_template);
@@ -178,7 +190,7 @@ string transform(string xml, string json_template) {
     // free(&xml);
   }
 
-  return output.dump();
+  return output;
 }
 
 const char* node_types[] = {
