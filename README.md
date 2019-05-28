@@ -33,12 +33,12 @@
 ## 🔥 Benchmark
 
 ```
-camaro x 261 ops/sec ±0.50% (83 runs sampled)
-rapidx2j x 228 ops/sec ±1.01% (88 runs sampled)
-xml2json x 48.78 ops/sec ±1.45% (63 runs sampled)
-xml2js x 38.89 ops/sec ±11.08% (55 runs sampled)
-fast-xml-parser x 221 ops/sec ±1.70% (85 runs sampled)
-xml-js x 35.83 ops/sec ±6.45% (63 runs sampled)
+camaro x 287 ops/sec ±0.74% (79 runs sampled)
+rapidx2j x 233 ops/sec ±0.49% (87 runs sampled)
+xml2json x 50.36 ops/sec ±1.08% (65 runs sampled)
+xml2js x 40.71 ops/sec ±8.94% (56 runs sampled)
+fast-xml-parser x 227 ops/sec ±1.07% (88 runs sampled)
+xml-js x 38.52 ops/sec ±7.82% (53 runs sampled)
 ```
 
 * Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
