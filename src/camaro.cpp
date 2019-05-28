@@ -11,8 +11,8 @@ using nodeset = pugi::xpath_node_set;
 
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
-template <typename T1, typename T2>
-void walk(T1 &doc, json &n, T2 &output, string key);
+template <typename T>
+void walk(T &doc, json &n, val &output, string key);
 
 inline bool startWith(string to_check, string prefix) {
   return to_check.rfind(prefix, 0) == 0;
@@ -141,8 +141,8 @@ val query_object(T &doc, json &node) {
   return output;
 }
 
-template <typename T1, typename T2>
-void walk(T1 &doc, json &n, T2 &output, string key) {
+template <typename T>
+void walk(T &doc, json &n, val &output, string key) {
   if (n.is_array()) {
     output.set(key, query_array(doc, n));
   } else if (n.is_object()) {
