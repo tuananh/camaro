@@ -223,17 +223,28 @@ struct simple_walker:pugi::xml_tree_walker {
       std::cout << "  "; // indentation
     }
 
-    std::vector<val> arr;
+    string node_type = std::string(node_types[node.type()]);
 
-    val obj = val::object();
-    for (pugi::xml_attribute a : node.attributes()) {
-      std::cout << "prop " << a.name() << "=" << a.value() << "'\n";
-      // set the props here
-      obj.set("@" + std::string(a.name()), std::string(a.value()));
+    if (node_type == "cdata") {
+
     }
-    arr.push_back(obj);
 
-    output.set(node.name(), val::array(arr));
+    if (node_type == "element") {
+      std::vector<val> arr;
+      val obj = val::object();
+
+      for (pugi::xml_attribute a : node.attributes()) {
+        // std::cout << "prop " << a.name() << "=" << a.value() << "'\n";
+        obj.set("@" + std::string(a.name()), std::string(a.value()));
+      }
+      arr.push_back(obj);
+
+      output.set(node.name(), val::array(arr));
+    }
+
+    if (node_type == "pcdata") {
+
+    }
 
     std::cout << node_types[node.type()] << ": name='" << node.name() << "', value='" << node.value() << "'\n";
 
