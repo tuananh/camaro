@@ -184,6 +184,8 @@ val transform(string xml, string json_template) {
   return output;
 }
 
+void traverse(std::stack<pugi::xml_node*> visit_stack, pugi::xml_node xml_node, val output_obj);
+
 const char* node_types[] = {
   "null", "document", "element", "pcdata", "cdata", "comment", "pi", "declaration"
 };
@@ -195,22 +197,28 @@ struct simple_walker:pugi::xml_tree_walker {
   pugi::xml_node* prev_node;
 
   virtual bool begin(pugi::xml_node& node) {
-    if (depth() > visit_stack.size()) {
-      visit_stack.push(&node);
-    }
-
     cur_node = &node;
     return true;
   }
   virtual bool end(pugi::xml_node& node) {
-    if (depth() < visit_stack.size()) {
-      visit_stack.pop();
-    }
     prev_node = &node;
     return true;
   }
 
   virtual bool for_each(pugi::xml_node& node) {
+    bool changing_level = false;
+    if (depth() > visit_stack.size()) {
+      std::cout << "going down, old depth=" << visit_stack.size() << ", new depth=" << depth() << "\n";
+      visit_stack.push(&node);
+      changing_level = true;
+    }
+
+    if (depth() < visit_stack.size()) {
+      std::cout << "going up, old depth=" << visit_stack.size() << ", new depth=" << depth() << "\n";
+      visit_stack.pop();
+      changing_level = true;
+    }
+
     for (int i = 0; i < depth(); ++i) {
       std::cout << "  "; // indentation
     }
