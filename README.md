@@ -11,6 +11,8 @@
 [![TypeScript definitions on DefinitelyTyped](https://badgen.net/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
 [![npm](https://badgen.net/npm/dt/camaro)](https://npm.im/camaro)
 
+[Demo on CodeSandbox.io](https://codesandbox.io/s/static-deg9w?fontsize=14)
+
 ## 🤘 Features
 
 * Transform XML to JSON. Only take properties that you're interested in.
