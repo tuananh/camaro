@@ -1,5 +1,7 @@
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
+#include <stack>
+#include <iostream>
 #include "../node_modules/pugixml/src/pugixml.hpp"
 #include "../node_modules/json/single_include/nlohmann/json.hpp"
 
@@ -14,7 +16,7 @@ enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 template <typename T>
 void walk(T &doc, json &n, val &output, string key);
 
-inline bool startWith(string to_check, string prefix) {
+inline bool start_with(string to_check, string prefix) {
   return to_check.rfind(prefix, 0) == 0;
 }
 
@@ -23,32 +25,32 @@ ReturnType get_return_type(string &path) {
   ReturnType t = T_STRING;
   switch (ch) {
     case 'b':
-      if (startWith(path, "boolean(")) {
+      if (start_with(path, "boolean(")) {
         t = T_BOOLEAN;
       }
       break;
     case 'c':
-      if (startWith(path, "count(") || startWith(path, "ceiling(")) {
+      if (start_with(path, "count(") || start_with(path, "ceiling(")) {
         t = T_NUMBER;
       }
       break;
     case 'f':
-      if (startWith(path, "floor(")) {
+      if (start_with(path, "floor(")) {
         t = T_NUMBER;
       }
       break;
     case 'n':
-      if (startWith(path, "number(")) {
+      if (start_with(path, "number(")) {
         t = T_NUMBER;
       }
       break;
     case 'r':
-      if (startWith(path, "round(")) {
+      if (start_with(path, "round(")) {
         t = T_NUMBER;
       }
       break;
     case 's':
-      if (startWith(path, "sum(")) {
+      if (start_with(path, "sum(")) {
         t = T_NUMBER;
       }
       break;
@@ -187,27 +189,53 @@ const char* node_types[] = {
 };
 
 struct simple_walker:pugi::xml_tree_walker {
-  json output;
-  json current_node;
+  val output = val::object();
+  std::stack<pugi::xml_node*> visit_stack;
+  pugi::xml_node* cur_node;
+  pugi::xml_node* prev_node;
 
-  // virtual bool begin(pugi::xml_node& node) {}
-  // virtual bool end(pugi::xml_node& node) {}
+  virtual bool begin(pugi::xml_node& node) {
+    if (depth() > visit_stack.size()) {
+      visit_stack.push(&node);
+    }
+
+    cur_node = &node;
+    return true;
+  }
+  virtual bool end(pugi::xml_node& node) {
+    if (depth() < visit_stack.size()) {
+      visit_stack.pop();
+    }
+    prev_node = &node;
+    return true;
+  }
 
   virtual bool for_each(pugi::xml_node& node) {
     for (int i = 0; i < depth(); ++i) {
-      // std::cout << "  "; // indentation
+      std::cout << "  "; // indentation
     }
 
-    // std::cout << node_types[node.type()] << ": name='" << node.name() << "', value='" << node.value() << "'\n";
+    std::vector<val> arr;
+
+    val obj = val::object();
+    for (pugi::xml_attribute a : node.attributes()) {
+      std::cout << "prop " << a.name() << "=" << a.value() << "'\n";
+      // set the props here
+      obj.set("@" + std::string(a.name()), std::string(a.value()));
+    }
+    arr.push_back(obj);
+
+    output.set(node.name(), val::array(arr));
+
+    std::cout << node_types[node.type()] << ": name='" << node.name() << "', value='" << node.value() << "'\n";
 
     return true; // continue traversal
   }
 };
 
-val toJson(string xml) {
+val to_json(string xml) {
   pugi::xml_document doc;
   simple_walker walker;
-  // json output;
 
   if (doc.load_string(xml.c_str())) {
     doc.traverse(walker);
@@ -216,10 +244,10 @@ val toJson(string xml) {
     // free(&xml);
   }
 
-  return val(2);
+  return walker.output;
 }
 
 EMSCRIPTEN_BINDINGS(my_module) {
   function("transform", &transform);
-  function("toJson", &toJson);
+  function("toJson", &to_json);
 }
