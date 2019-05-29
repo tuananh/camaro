@@ -240,6 +240,13 @@ struct simple_walker:pugi::xml_tree_walker {
       arr.push_back(obj);
 
       output.set(node.name(), val::array(arr));
+
+      auto children = node.children();
+      size_t children_count = std::distance(children.begin(), children.end());
+
+      std::cout << node.name() << " has " << children_count << " children";
+
+      std::cout << std::endl;
     }
 
     if (node_type == "pcdata") {
