@@ -231,22 +231,37 @@ struct simple_walker:pugi::xml_tree_walker {
 
     if (node_type == "element") {
       std::vector<val> arr;
+
       val obj = val::object();
 
-      for (pugi::xml_attribute a : node.attributes()) {
-        // std::cout << "prop " << a.name() << "=" << a.value() << "'\n";
-        obj.set("@" + std::string(a.name()), std::string(a.value()));
+      // annotate props
+      val props_obj = val::object();
+      auto attrs = node.attributes();
+      size_t attrs_count = std::distance(attrs.begin(), attrs.end());
+
+      if (attrs_count > 0) {
+        for (pugi::xml_attribute a : node.attributes()) {
+          // std::cout << "prop " << a.name() << "=" << a.value() << "'\n";
+          props_obj.set(std::string(a.name()), std::string(a.value()));
+        }
+        obj.set("$", props_obj);
       }
+
       arr.push_back(obj);
 
-      output.set(node.name(), val::array(arr));
 
       auto children = node.children();
       size_t children_count = std::distance(children.begin(), children.end());
 
-      std::cout << node.name() << " has " << children_count << " children";
+      std::cout << node.name() << " has " << children_count << " children" << std::endl;
+
+      for (pugi::xml_node child: children) {
+        std::cout << ", child " << child.name();
+      }
 
       std::cout << std::endl;
+
+      output.set(node.name(), val::array(arr));
     }
 
     if (node_type == "pcdata") {

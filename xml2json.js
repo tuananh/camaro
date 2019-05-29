@@ -1,7 +1,16 @@
 const fs = require('fs')
 const xml2json = require('xml2json')
+const xml2js = require('xml2js').parseString
 
-const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
+const xml = `
+    <root text="im root">
+        <items>
+            <item>1</item>
+            <item>2</item>
+        </items>
+    </root>`
 
-const output = xml2json.toJson(xml)
-console.log(output);
+xml2js(xml, (err, result) => {
+    console.log(JSON.stringify(result, null, 2));
+
+})

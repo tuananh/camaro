@@ -9,5 +9,5 @@ const { toJson } = require('./')
         </items>
     </root>`
     const result = await toJson(xml)
-    console.log(result);
+    console.log(JSON.stringify(result, null, 2));
 })()
