@@ -1,4 +1,4 @@
-const { toJson } = require('./')
+const { toJson, prettyPrint } = require('./')
 
 ;(async function () {
     const xml = `
@@ -11,4 +11,8 @@ const { toJson } = require('./')
     </root>`
     const result = await toJson(xml)
     console.log(JSON.stringify(result, null, 2));
+
+    const prettyStr = await prettyPrint(xml)
+    console.log('@@@' + prettyStr);
+
 })()
