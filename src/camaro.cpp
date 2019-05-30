@@ -1,8 +1,6 @@
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
 #include <stack>
-#include <iostream>
-#include <sstream>
 #include "../node_modules/pugixml/src/pugixml.hpp"
 #include "../node_modules/json/single_include/nlohmann/json.hpp"
 
@@ -210,19 +208,19 @@ struct simple_walker:pugi::xml_tree_walker {
   virtual bool for_each(pugi::xml_node& node) {
     bool changing_level = false;
     if (depth() > visit_stack.size()) {
-      std::cout << "going down, old depth=" << visit_stack.size() << ", new depth=" << depth() << "\n";
+      // std::cout << "going down, old depth=" << visit_stack.size() << ", new depth=" << depth() << "\n";
       visit_stack.push(&node);
       changing_level = true;
     }
 
     if (depth() < visit_stack.size()) {
-      std::cout << "going up, old depth=" << visit_stack.size() << ", new depth=" << depth() << "\n";
+      // std::cout << "going up, old depth=" << visit_stack.size() << ", new depth=" << depth() << "\n";
       visit_stack.pop();
       changing_level = true;
     }
 
     for (int i = 0; i < depth(); ++i) {
-      std::cout << "  "; // indentation
+      // std::cout << "  "; // indentation
       pretty_str += "  ";
     }
 
@@ -302,16 +300,27 @@ struct PrettyPrintOpts {
   int indent_size;
 };
 
+// custom writer because we dont want to import sstream
+struct xml_string_writer: pugi::xml_writer
+{
+  std::string result;
+
+  virtual void write(const void* data, size_t size)
+  {
+    result.append(static_cast<const char*>(data), size);
+  }
+};
+
 string pretty_print(string xml, PrettyPrintOpts opts) {
   pugi::xml_document doc;
-  std::ostringstream oss;
+  xml_string_writer writer;
   std::string indent(opts.indent_size, ' ');
 
   if (doc.load_string(xml.c_str())) {
-	  doc.print(oss, indent.c_str(), pugi::format_default, pugi::encoding_utf8);
+	  doc.print(writer, indent.c_str(), pugi::format_default, pugi::encoding_utf8);
   }
 
-  return oss.str();
+  return writer.result;
 }
 
 EMSCRIPTEN_BINDINGS(my_module) {
