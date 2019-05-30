@@ -192,6 +192,7 @@ const char* node_types[] = {
 
 struct simple_walker:pugi::xml_tree_walker {
   val output = val::object();
+  string pretty_string;
   std::stack<pugi::xml_node*> visit_stack;
   pugi::xml_node* cur_node;
   pugi::xml_node* prev_node;
@@ -288,7 +289,22 @@ val to_json(string xml) {
   return walker.output;
 }
 
+string pretty_print(string xml) {
+  pugi::xml_document doc;
+  simple_walker walker;
+
+  if (doc.load_string(xml.c_str())) {
+    doc.traverse(walker);
+    // free(&j);
+    // free(&doc);
+    // free(&xml);
+  }
+
+  return walker.pretty_string;
+}
+
 EMSCRIPTEN_BINDINGS(my_module) {
   function("transform", &transform);
   function("toJson", &to_json);
+  function("prettyPrint", &pretty_print);
 }
