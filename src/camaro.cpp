@@ -2,6 +2,7 @@
 #include <emscripten/val.h>
 #include <stack>
 #include <iostream>
+#include <sstream>
 #include "../node_modules/pugixml/src/pugixml.hpp"
 #include "../node_modules/json/single_include/nlohmann/json.hpp"
 
@@ -192,7 +193,7 @@ const char* node_types[] = {
 
 struct simple_walker:pugi::xml_tree_walker {
   val output = val::object();
-  string pretty_string;
+  string pretty_str;
   std::stack<pugi::xml_node*> visit_stack;
   pugi::xml_node* cur_node;
   pugi::xml_node* prev_node;
@@ -222,6 +223,7 @@ struct simple_walker:pugi::xml_tree_walker {
 
     for (int i = 0; i < depth(); ++i) {
       std::cout << "  "; // indentation
+      pretty_str += "  ";
     }
 
     string node_type = std::string(node_types[node.type()]);
@@ -243,6 +245,8 @@ struct simple_walker:pugi::xml_tree_walker {
       if (attrs_count > 0) {
         for (pugi::xml_attribute a : node.attributes()) {
           // std::cout << "prop " << a.name() << "=" << a.value() << "'\n";
+          // pretty_str << "prop " << a.name() << "=" << a.value() << "'\n";
+          pretty_str.append(string(a.name()) + "=" + string(a.value()) + "\n");
           props_obj.set(std::string(a.name()), std::string(a.value()));
         }
         obj.set("$", props_obj);
@@ -254,13 +258,18 @@ struct simple_walker:pugi::xml_tree_walker {
       auto children = node.children();
       size_t children_count = std::distance(children.begin(), children.end());
 
-      std::cout << node.name() << " has " << children_count << " children" << std::endl;
+      // std::cout << node.name() << " has " << children_count << " children" << std::endl;
+      // pretty_str << node.name() << " has " << children_count << " children" << std::endl;
 
-      for (pugi::xml_node child: children) {
-        std::cout << ", child " << child.name();
+      if (children_count > 0) {
+        for (pugi::xml_node child: children) {
+          // std::cout << ", child " << child.name();
+          pretty_str.append(string(child.name()) + "=" + string(child.value()) + "\n");
+        }
       }
 
-      std::cout << std::endl;
+
+      // std::cout << std::endl;
 
       output.set(node.name(), val::array(arr));
     }
@@ -269,7 +278,7 @@ struct simple_walker:pugi::xml_tree_walker {
 
     }
 
-    std::cout << node_types[node.type()] << ": name='" << node.name() << "', value='" << node.value() << "'\n";
+    // std::cout << node_types[node.type()] << ": name='" << node.name() << "', value='" << node.value() << "'\n";
 
     return true; // continue traversal
   }
@@ -289,21 +298,26 @@ val to_json(string xml) {
   return walker.output;
 }
 
-string pretty_print(string xml) {
+struct PrettyPrintOpts {
+  int indent_size;
+};
+
+string pretty_print(string xml, PrettyPrintOpts opts) {
   pugi::xml_document doc;
-  simple_walker walker;
+  std::ostringstream oss;
+  std::string indent(opts.indent_size, ' ');
 
   if (doc.load_string(xml.c_str())) {
-    doc.traverse(walker);
-    // free(&j);
-    // free(&doc);
-    // free(&xml);
+	  doc.print(oss, indent.c_str(), pugi::format_default, pugi::encoding_utf8);
   }
 
-  return walker.pretty_string;
+  return oss.str();
 }
 
 EMSCRIPTEN_BINDINGS(my_module) {
+  value_object<PrettyPrintOpts>("PrettyPrintOpts")
+    .field("indentSize", &PrettyPrintOpts::indent_size);
+
   function("transform", &transform);
   function("toJson", &to_json);
   function("prettyPrint", &pretty_print);
