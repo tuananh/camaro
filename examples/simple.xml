@@ -1,0 +1,7 @@
+<root text="im root">
+    <items>
+        <item>1</item>
+        <item>2</item>
+    </items>
+    <stringfield>hello world</stringfield>
+</root>
