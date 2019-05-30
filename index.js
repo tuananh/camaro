@@ -24,6 +24,21 @@ instance.onRuntimeInitialized = () => {
     cachedInstance = instance
 }
 
+function callWasmBinding(methodName, ...args) {
+    return new Promise((resolve) => {
+        if (!cachedInstance) {
+            instance.onRuntimeInitialized = () => {
+                cachedInstance = instance
+                const result = instance[methodName](...args)
+                resolve(result)
+            }
+        } else {
+            const result = cachedInstance[methodName](...args)
+            resolve(result)
+        }
+    })
+}
+
 /**
  * convert xml to json base on the template object
  * @param {string} xml xml string
@@ -40,18 +55,7 @@ async function transform(xml, template) {
     }
 
     const templateString = JSON.stringify(template)
-    return new Promise((resolve) => {
-        if (!cachedInstance) {
-            instance.onRuntimeInitialized = () => {
-                cachedInstance = instance
-                const result = instance.transform(xml, templateString)
-                resolve(result)
-            }
-        } else {
-            const result = cachedInstance.transform(xml, templateString)
-            resolve(result)
-        }
-    })
+    return callWasmBinding('transform', xml, templateString)
 }
 
 /**
@@ -64,16 +68,7 @@ async function toJson(xml) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return new Promise((resolve) => {
-        if (!cachedInstance) {
-            instance.onRuntimeInitialized = () => {
-                cachedInstance = instance
-                resolve(instance.toJson(xml))
-            }
-        } else {
-            resolve(cachedInstance.toJson(xml))
-        }
-    })
+    return callWasmBinding('toJson', xml)
 }
 
 /**
@@ -88,16 +83,7 @@ async function prettyPrint(xml, opts={indentSize: 2}) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return new Promise((resolve) => {
-        if (!cachedInstance) {
-            instance.onRuntimeInitialized = () => {
-                cachedInstance = instance
-                resolve(instance.prettyPrint(xml, opts))
-            }
-        } else {
-            resolve(cachedInstance.prettyPrint(xml, opts))
-        }
-    })
+    return callWasmBinding('prettyPrint', xml, opts)
 }
 
 module.exports = { transform, toJson, prettyPrint }
