@@ -301,6 +301,7 @@ struct PrettyPrintOpts {
 };
 
 // custom writer because we dont want to import sstream
+// it's faster if we were to use stringstream but we will leave it for now
 struct xml_string_writer: pugi::xml_writer
 {
   std::string result;
