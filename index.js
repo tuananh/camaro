@@ -80,7 +80,7 @@ async function toJson(xml) {
  * pretty print xml string
  * @param {string} xml xml string
  * @param {object} opts pretty print options
- * @param {number} opts.indentSize indent size, default=2
+ * @param {number} [opts.indentSize=2] indent size, default=2
  * @returns {string} xml pretty print string
  */
 async function prettyPrint(xml, opts={indentSize: 2}) {
