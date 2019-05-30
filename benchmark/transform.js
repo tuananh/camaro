@@ -1,6 +1,6 @@
 const benchmark = require('benchmark')
 const fs = require('fs')
-const { transform } = require('../')
+const { transform } = require('..')
 const x2j = require('rapidx2j')
 const xml2json = require('xml2json')
 const xml2js = require('xml2js').parseString
