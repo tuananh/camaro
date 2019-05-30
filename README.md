@@ -21,6 +21,7 @@
 * AWS Lambda friendly (or serverless in general).
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 * Small footprint (Zero dependencies).
+* Pretty print XML.
 
 ## 🚧 Upgrading notes from version 3 🚧
 
@@ -28,7 +29,7 @@
 - 🚨BREAKING: `transform()` is now an async function.
 - 🚨BREAKING: change the way transform is imported `const { transform } = require('camaro')`
 - plan to add `toJson()` function to convert the whole XML input.
-- plan to add `prettyPrint()` to pretty print XML.
+- DONE: plan to add `prettyPrint()` to pretty print XML.
 
 ## 🔥 Benchmark
 
@@ -71,7 +72,7 @@ The rest are pretty much vanilla XPath 1.0.
 
 
 ```js
-const { transform } = require('camaro')
+const { transform, prettyPrint } = require('camaro')
 const fs = require('fs')
 
 const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
@@ -96,6 +97,9 @@ const template = {
 ;(async function () {
     const result = await transform(xml, template)
     console.log(result)
+
+    const prettyStr = await prettyPrint(xml, { indentSize: 4})
+    console.log(prettyStr)
 })()
 
 
