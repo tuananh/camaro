@@ -5,9 +5,9 @@ const { pd } = require('pretty-data')
 const prettifyXml = require('prettify-xml')
 
 const suite = new benchmark.Suite()
-const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
+const xml = fs.readFileSync('examples/simple.xml', 'utf-8')
 
-suite.add('camaro prettyPrint()', function(deferred) {
+suite.add('camaro', function(deferred) {
     prettyPrint(xml).then(_ => deferred.resolve())
 }, { defer: true })
 

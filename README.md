@@ -70,6 +70,7 @@ We also introduce some custom syntax such as:
 
 The rest are pretty much vanilla XPath 1.0.
 
+For complete API documentation, please see [API.md](API.md)
 
 ```js
 const { transform, prettyPrint } = require('camaro')
@@ -104,16 +105,6 @@ const template = {
 
 
 ```
-
-### Namespaces
-
-By default, a path `'//HotelSummary'` will transform all `HotelSummary` elements regardless of their namespaces. To only transform elements under a specific namespace, say `http://v3.hotel.wsapi.ean.com`, you can append the path with a filter:
-
-    '//HotelSummary[namespace-uri() = "http://v3.hotel.wsapi.ean.com"]'
-
-## Using camaro on AWS Lambda
-
-Just use it as is. Since v4, camaro is a WebAssembly module.
 
 ## Licence
 
