@@ -5,23 +5,28 @@ function isNonEmptyString(str) {
 }
 
 function isEmptyObject(obj) {
-    if (Object.keys(obj).length === 0 && obj.constructor === Object) {
-        return true
-    }
-
-    for (const prop in obj) {
-        if (obj.hasOwnProperty(prop)) {
-            return false
-        }
-    }
-
-    return JSON.stringify(obj) === JSON.stringify({})
+    return Object.entries(obj).length === 0 && obj.constructor === Object
 }
 
 let cachedInstance
 const instance = Module()
 instance.onRuntimeInitialized = () => {
     cachedInstance = instance
+}
+
+function callWasmBinding(methodName, ...args) {
+    return new Promise((resolve) => {
+        if (!cachedInstance) {
+            instance.onRuntimeInitialized = () => {
+                cachedInstance = instance
+                const result = instance[methodName](...args)
+                resolve(result)
+            }
+        } else {
+            const result = cachedInstance[methodName](...args)
+            resolve(result)
+        }
+    })
 }
 
 /**
@@ -40,18 +45,7 @@ async function transform(xml, template) {
     }
 
     const templateString = JSON.stringify(template)
-    return new Promise((resolve) => {
-        if (!cachedInstance) {
-            instance.onRuntimeInitialized = () => {
-                cachedInstance = instance
-                const result = instance.transform(xml, templateString)
-                resolve(result)
-            }
-        } else {
-            const result = cachedInstance.transform(xml, templateString)
-            resolve(result)
-        }
-    })
+    return callWasmBinding('transform', xml, templateString)
 }
 
 /**
@@ -64,16 +58,22 @@ async function toJson(xml) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return new Promise((resolve) => {
-        if (!cachedInstance) {
-            instance.onRuntimeInitialized = () => {
-                cachedInstance = instance
-                resolve(instance.toJson(xml))
-            }
-        } else {
-            resolve(cachedInstance.toJson(xml))
-        }
-    })
+    return callWasmBinding('toJson', xml)
 }
 
-module.exports = { transform, toJson }
+/**
+ * pretty print xml string
+ * @param {string} xml xml string
+ * @param {object} opts pretty print options
+ * @param {number} [opts.indentSize=2] indent size, default=2
+ * @returns {string} xml pretty print string
+ */
+async function prettyPrint(xml, opts={indentSize: 2}) {
+    if (!isNonEmptyString(xml)) {
+        throw new TypeError('expecting xml input to be non-empty string')
+    }
+
+    return callWasmBinding('prettyPrint', xml, opts)
+}
+
+module.exports = { transform, toJson, prettyPrint }

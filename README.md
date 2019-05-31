@@ -23,6 +23,7 @@
 * AWS Lambda friendly (or serverless in general).
 * SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
 * Small footprint (Zero dependencies).
+* Pretty print XML.
 
 ## 🚧 Upgrading notes from version 3 🚧
 
@@ -30,7 +31,7 @@
 - 🚨BREAKING: `transform()` is now an async function.
 - 🚨BREAKING: change the way transform is imported `const { transform } = require('camaro')`
 - plan to add `toJson()` function to convert the whole XML input.
-- plan to add `prettyPrint()` to pretty print XML.
+- DONE: plan to add `prettyPrint()` to pretty print XML.
 
 ## 🔥 Benchmark
 
@@ -49,6 +50,8 @@ The whole reason of me creating this is because most of the time, I'm just inter
 * Benchmark run on MacBookPro14,1 - Intel Core i5 CPU @ 2.30GHz using Node v8.10.0.
 
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
+
+For complete benchmark, see [benchmark/index.md](benchmark/index.md).
 
 ![intro](intro.png)
 
@@ -71,9 +74,10 @@ We also introduce some custom syntax such as:
 
 The rest are pretty much vanilla XPath 1.0.
 
+For complete API documentation, please see [API.md](API.md)
 
 ```js
-const { transform } = require('camaro')
+const { transform, prettyPrint } = require('camaro')
 const fs = require('fs')
 
 const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
@@ -98,20 +102,13 @@ const template = {
 ;(async function () {
     const result = await transform(xml, template)
     console.log(result)
+
+    const prettyStr = await prettyPrint(xml, { indentSize: 4})
+    console.log(prettyStr)
 })()
 
 
 ```
-
-### Namespaces
-
-By default, a path `'//HotelSummary'` will transform all `HotelSummary` elements regardless of their namespaces. To only transform elements under a specific namespace, say `http://v3.hotel.wsapi.ean.com`, you can append the path with a filter:
-
-    '//HotelSummary[namespace-uri() = "http://v3.hotel.wsapi.ean.com"]'
-
-## Using camaro on AWS Lambda
-
-Just use it as is. Since v4, camaro is a WebAssembly module.
 
 ## Licence
 

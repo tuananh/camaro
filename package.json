@@ -8,7 +8,7 @@
   "typings": "index.d.ts",
   "scripts": {
     "test": "tape test/*.test.js",
-    "bench": "node benchmark",
+    "bench": "node benchmark/transform.js",
     "install-deps": "napa",
     "build": "docker run --rm -v $(pwd):/src trzeci/emscripten ./build.sh"
   },
