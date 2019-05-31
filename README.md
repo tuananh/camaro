@@ -49,6 +49,8 @@ The whole reason of me creating this is because most of the time, I'm just inter
 
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
 
+For complete benchmark, see [benchmark/index.md](benchmark/index.md).
+
 ![intro](intro.png)
 
 ## Installation
