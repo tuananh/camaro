@@ -24,13 +24,16 @@
     "xml",
     "parser",
     "n-api",
-    "xml2json"
+    "xml2json",
+    "webassembly",
+    "wasm"
   ],
   "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
   "license": "MIT",
   "napa": {
     "pugixml": "tuananh/pugixml#develop",
-    "json": "nlohmann/json#v3.5.0"
+    "json": "nlohmann/json#v3.5.0",
+    "fifo_map": "nlohmann/fifo_map#master"
   },
   "devDependencies": {
     "napa": "3.0.0",
