@@ -3,12 +3,19 @@
 #include <stack>
 #include "../node_modules/pugixml/src/pugixml.hpp"
 #include "../node_modules/json/single_include/nlohmann/json.hpp"
+#include "../node_modules/fifo_map/src/fifo_map.hpp"
 
 using namespace emscripten;
-using json = nlohmann::json;
 using string = std::string;
 using xquery = pugi::xpath_query;
 using nodeset = pugi::xpath_node_set;
+
+// See https://github.com/nlohmann/json#notes
+// See https://github.com/nlohmann/json/issues/485#issuecomment-333652309
+// A workaround to use fifo_map as map, we are just ignoring the 'less' compare
+template<class K, class V, class dummy_compare, class A>
+using my_workaround_fifo_map = nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
+using json = nlohmann::basic_json<my_workaround_fifo_map>;
 
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
