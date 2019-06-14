@@ -1,4 +1,5 @@
 # ignore pugixml docs and tests
+.github
 .gitignore
 .DS_Store
 npm-debug.log
