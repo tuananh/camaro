@@ -10,9 +10,14 @@ jobs:
     matrix:
       node_8_x:
         node_version: 8.x
+      node_9_x:
+        node_version: 9.x
       node_10_x:
         node_version: 10.x
-
+      node_11_x:
+        node_version: 11.x
+      node_12_x:
+        node_version: 12.x
   steps:
   - template: azure-test.yml
 
@@ -27,8 +32,14 @@ jobs:
     matrix:
       node_8_x:
         node_version: 8.x
+      node_9_x:
+        node_version: 9.x
       node_10_x:
         node_version: 10.x
+      node_11_x:
+        node_version: 11.x
+      node_12_x:
+        node_version: 12.x
 
   steps:
   - template: azure-test.yml
@@ -44,8 +55,14 @@ jobs:
     matrix:
       node_8_x:
         node_version: 8.x
+      node_9_x:
+        node_version: 9.x
       node_10_x:
         node_version: 10.x
+      node_11_x:
+        node_version: 11.x
+      node_12_x:
+        node_version: 12.x
 
   steps:
   - template: azure-test.yml
