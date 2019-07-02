@@ -12,6 +12,8 @@ echo "1/2 Compiling pugixml"
     -s WASM=1 \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s MODULARIZE=1 \
+    -s ASSERTIONS=0 \
+    -DNDEBUG \
     -s 'EXPORT_NAME="pugixml"' \
     -I node_modules/pugixml/src \
     -c node_modules/pugixml/src/pugixml.cpp \
