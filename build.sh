@@ -27,6 +27,7 @@ echo "2/2 Compiling camaro wasm bindings"
     -s MODULARIZE=1 \
     -s ASSERTIONS=0 \
     -DNDEBUG \
+    -s 'MALLOC="emmalloc"' \
     -s 'EXPORT_NAME="camaro"' \
     -I node_modules/pugixml/src \
     -I node_modules/json/single_include/nlohmann \
