@@ -36,7 +36,7 @@ Output
 {
     "items": [
         "hello",
-        "default val",
+        "my default val",
         "world"
     ]
 }
