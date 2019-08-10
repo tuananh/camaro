@@ -1,16 +1,20 @@
 # Benchmark
 
+Never mind about the actual number. You can check the percentage differences between package for reference.
+
+Benchmark ran on AMZ Ryzen 3800X.
+
 ## transform()
 
 `node benchmark/transform`
 
 ```
-camaro x 287 ops/sec ±0.74% (79 runs sampled)
-rapidx2j x 233 ops/sec ±0.49% (87 runs sampled)
-xml2json x 50.36 ops/sec ±1.08% (65 runs sampled)
-xml2js x 40.71 ops/sec ±8.94% (56 runs sampled)
-fast-xml-parser x 227 ops/sec ±1.07% (88 runs sampled)
-xml-js x 38.52 ops/sec ±7.82% (53 runs sampled)
+camaro x 362 ops/sec ±0.31% (87 runs sampled)
+rapidx2j x 226 ops/sec ±0.27% (88 runs sampled)
+xml2json x 46.32 ops/sec ±1.39% (61 runs sampled)
+xml2js x 50.51 ops/sec ±7.22% (68 runs sampled)
+fast-xml-parser x 256 ops/sec ±0.63% (86 runs sampled)
+xml-js x 45.05 ops/sec ±6.19% (61 runs sampled)
 ```
 
 ## prettyPrint()
@@ -18,7 +22,7 @@ xml-js x 38.52 ops/sec ±7.82% (53 runs sampled)
 `node benchmark/pretty-print`
 
 ```
-camaro x 201,493 ops/sec ±1.25% (77 runs sampled)
-pretty-data x 132,456 ops/sec ±3.72% (85 runs sampled)
-prettify-xml x 199,420 ops/sec ±1.45% (91 runs sampled)
+camaro x 274,438 ops/sec ±0.56% (87 runs sampled)
+pretty-data x 155,168 ops/sec ±0.82% (94 runs sampled)
+prettify-xml x 244,450 ops/sec ±0.28% (94 runs sampled)
 ```
