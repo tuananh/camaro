@@ -10,7 +10,7 @@ artifacts:
 build: off
 environment:
   github_release_token:
-    secure: PbRZg8hVpAS5WWNZYY461xJOOgZLaDIR8QGM5fX+o11JCLoR+ccdwkbBHldTBcBx
+    secure: q9SRY5uTjG/sTOzS9WYYj4M/oRy7li2dTVQ/77ZxgcCKKVSvnqF3krOPouUEji6l
   matrix:
     - nodejs_version: "6"
     - nodejs_version: "7"
