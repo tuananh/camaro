@@ -4,6 +4,7 @@
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
+  "publishConfig": { "registry": "https://npm.pkg.github.com/@tuananh" },
   "main": "index.js",
   "typings": "index.d.ts",
   "scripts": {
