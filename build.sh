@@ -5,6 +5,9 @@ set -e
 export OPTIMIZE="-O3"
 
 echo "1/2 Compiling pugixml"
+
+cp src/pugiconfig.hpp node_modules/pugixml/src/pugiconfig.hpp
+
 (
   emcc \
     --bind \
