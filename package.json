@@ -34,7 +34,7 @@
   "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
   "license": "MIT",
   "napa": {
-    "pugixml": "tuananh/pugixml#add-raw-xpath-func",
+    "pugixml": "tuananh/pugixml#develop",
     "json": "nlohmann/json#v3.5.0",
     "fifo_map": "nlohmann/fifo_map#master"
   },
