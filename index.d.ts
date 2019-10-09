@@ -1,5 +1,7 @@
-type transform = <T = any>(xml: string, template: object) => T;
-type toJson = <T = any>(xml: string) => T;
-type prettyPrint = <T = any>(xml: string) => T;
-declare const camaro: { transform: transform, toJson: toJson, prettyPrint: prettyPrint };
+declare const camaro: {
+    prettyPrint(xml: string, opts?: { indentSize: number }): Promise<string>;
+    toJson(xml: string): Promise<any>;
+    transform(xml: string, template: object): Promise<any>;
+};
+
 export = camaro;
