@@ -224,11 +224,17 @@ val transform(string xml, string json_template)
   {
     json j = json::parse(json_template);
 
-    for (json::iterator it = j.begin(); it != j.end(); ++it)
+    if (j.is_array())
     {
-      string key = it.key();
-      json &node = j[key];
-      walk(doc, node, output, key);
+       return query_array(doc, j);
+    } else 
+    {
+      for (json::iterator it = j.begin(); it != j.end(); ++it)
+      {
+        string key = it.key();
+        json &node = j[key];
+        walk(doc, node, output, key);
+      }
     }
     // free(&j);
     // free(&doc);
