@@ -9,22 +9,22 @@ function isEmptyObject(obj) {
 }
 
 let cachedInstance
-const instance = Module()
-instance.onRuntimeInitialized = () => {
-    cachedInstance = instance
-}
 
 function callWasmBinding(methodName, ...args) {
-    return new Promise((resolve) => {
+    if (!cachedInstance) throw new Error('camaro is not yet initialized. You need to call `ready()` first.')
+    return cachedInstance[methodName](...args)
+}
+
+const ready = () => {
+    return new Promise((resolve, reject) => {
         if (!cachedInstance) {
+            const instance = Module()
             instance.onRuntimeInitialized = () => {
                 cachedInstance = instance
-                const result = instance[methodName](...args)
-                resolve(result)
+                resolve()
             }
-        } else {
-            const result = cachedInstance[methodName](...args)
-            resolve(result)
+        } else {            
+            resolve()
         }
     })
 }
@@ -76,4 +76,4 @@ async function prettyPrint(xml, opts={indentSize: 2}) {
     return callWasmBinding('prettyPrint', xml, opts)
 }
 
-module.exports = { transform, toJson, prettyPrint }
+module.exports = { ready, transform, toJson, prettyPrint }

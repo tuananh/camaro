@@ -1,6 +1,6 @@
 const fs = require('fs')
 const t = require('tape')
-const { transform } = require('../')
+const { ready, transform } = require('../')
 
 t.test('array test', async t => {
     const xml = fs.readFileSync('examples/recipe.xml', 'utf-8')
@@ -15,7 +15,7 @@ t.test('array test', async t => {
             }
         ]
     }
-
+    await ready()
     const result = await transform(xml, recipeTemplate)
     t.equal(typeof result, 'object', 'result is expected to be object')
     t.equal(result.id, 'moco09596c01s001r002')

@@ -76,7 +76,7 @@ The rest are pretty much vanilla XPath 1.0.
 For complete API documentation, please see [API.md](API.md)
 
 ```js
-const { transform, prettyPrint } = require('camaro')
+const { ready, transform, prettyPrint } = require('camaro')
 const fs = require('fs')
 
 const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
@@ -99,6 +99,7 @@ const template = {
 }
 
 ;(async function () {
+    await ready()
     const result = await transform(xml, template)
     console.log(result)
 
