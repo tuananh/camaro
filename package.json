@@ -41,6 +41,9 @@
     "json": "nlohmann/json#v3.5.0",
     "fifo_map": "nlohmann/fifo_map#master"
   },
+  "napa-config": {
+    "cache": false
+  },
   "devDependencies": {
     "napa": "3.0.0",
     "tape": "4.13.2"
