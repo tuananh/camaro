@@ -43,6 +43,6 @@
   },
   "devDependencies": {
     "napa": "3.0.0",
-    "tape": "4.13.2"
+    "tape": "5.0.0"
   }
 }
