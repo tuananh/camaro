@@ -1,74 +1,79 @@
 jobs:
+  - job: Windows
+    pool: "Hosted VS2017"
 
-- job: Windows
-  pool: 'Hosted VS2017'
+    variables:
+      os_name: Windows
 
-  variables:
-    os_name: Windows
+    strategy:
+      matrix:
+        node_8_x:
+          node_version: 8.x
+        node_9_x:
+          node_version: 9.x
+        node_10_x:
+          node_version: 10.x
+        node_11_x:
+          node_version: 11.x
+        node_12_x:
+          node_version: 12.x
+        node_13_x:
+          node_version: 13.x
+        node_14_x:
+          node_version: 14.x
+    steps:
+      - template: azure-test.yml
 
-  strategy:
-    matrix:
-      node_8_x:
-        node_version: 8.x
-      node_9_x:
-        node_version: 9.x
-      node_10_x:
-        node_version: 10.x
-      node_11_x:
-        node_version: 11.x
-      node_12_x:
-        node_version: 12.x
-      node_13_x:
-        node_version: 13.x  
-  steps:
-  - template: azure-test.yml
+  - job: Linux
+    pool:
+      vmImage: "Ubuntu 16.04"
 
-- job: Linux
-  pool:
-    vmImage: 'Ubuntu 16.04'
+    variables:
+      os_name: Linux
 
-  variables:
-    os_name: Linux
+    strategy:
+      matrix:
+        node_8_x:
+          node_version: 8.x
+        node_9_x:
+          node_version: 9.x
+        node_10_x:
+          node_version: 10.x
+        node_11_x:
+          node_version: 11.x
+        node_12_x:
+          node_version: 12.x
+        node_13_x:
+          node_version: 13.x
+        node_14_x:
+          node_version: 14.x
 
-  strategy:
-    matrix:
-      node_8_x:
-        node_version: 8.x
-      node_9_x:
-        node_version: 9.x
-      node_10_x:
-        node_version: 10.x
-      node_11_x:
-        node_version: 11.x
-      node_12_x:
-        node_version: 12.x
-      node_13_x:
-        node_version: 13.x
+    steps:
+      - template: azure-test.yml
 
-  steps:
-  - template: azure-test.yml
+  - job: OSX
+    pool:
+      vmImage: "macOS 10.13"
 
-- job: OSX
-  pool:
-    vmImage: 'macOS 10.13'
+    variables:
+      os_name: OSX
 
-  variables:
-    os_name: OSX
+    strategy:
+      matrix:
+        node_8_x:
+          node_version: 8.x
+        node_9_x:
+          node_version: 9.x
+        node_10_x:
+          node_version: 10.x
+        node_11_x:
+          node_version: 11.x
+        node_12_x:
+          node_version: 12.x
+        node_13_x:
+          node_version: 13.x
+        node_14_x:
+          node_version: 14.x
 
-  strategy:
-    matrix:
-      node_8_x:
-        node_version: 8.x
-      node_9_x:
-        node_version: 9.x
-      node_10_x:
-        node_version: 10.x
-      node_11_x:
-        node_version: 11.x
-      node_12_x:
-        node_version: 12.x
-      node_13_x:
-        node_version: 13.x
-
-  steps:
-  - template: azure-test.yml
+    steps:
+      - template: azure-test.yml
