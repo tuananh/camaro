@@ -1,11 +1,10 @@
 steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: $(node_version)
+    displayName: "Install Node.js"
 
-- task: NodeTool@0
-  inputs:
-    versionSpec: $(node_version)
-  displayName: 'Install Node.js'
-
-- bash: |
-    npm install
-    npm run test
-  displayName: 'Install and test'
+  - bash: |
+      npm install
+      npm run test
+    displayName: "Install and test"
