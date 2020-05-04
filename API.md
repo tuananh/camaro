@@ -7,6 +7,10 @@
 
 ## camaro
 
+### `ready()`
+
+Initialize module. Needed to be called once before calling other methods.
+
 ### `transform(xml, template)`
 
 Transform xml string to JSON using the given template powered by XPath where:
@@ -43,6 +47,8 @@ const template = {
 ```
 
 ### `toJson(xml)`
+
+**Not yet implemented**
 
 Transform xml string to JSON where:
 - `xml` - the input xml string
