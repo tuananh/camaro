@@ -41,7 +41,7 @@ echo "2/2 Compiling camaro wasm bindings"
     -Wno-writable-strings \
     --closure 1 \
     --llvm-lto 1 \
-    -x c++ -std=c++17 dist/*.o \
+    -x c++ -std=c++11 dist/*.o \
     src/camaro.cpp
 )
 

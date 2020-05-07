@@ -1,6 +1,6 @@
 {
   "name": "camaro",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
@@ -10,7 +10,15 @@
     "test": "tape test/*.test.js",
     "bench": "node benchmark/transform.js",
     "install-deps": "napa",
-    "build": "docker run --rm -v $(pwd):/src trzeci/emscripten ./build.sh"
+    "build": "docker run --rm -v $(pwd):/src trzeci/emscripten ./build.sh",
+    "gen-esm": "gen-esm-wrapper . ./index.mjs"
+  },
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "import": "./index.mjs"
+    },
+    "./": "./"
   },
   "repository": {
     "type": "git",
@@ -38,14 +46,15 @@
   "license": "MIT",
   "napa": {
     "pugixml": "tuananh/pugixml#develop",
-    "json": "nlohmann/json#v3.5.0",
+    "json": "nlohmann/json#develop",
     "fifo_map": "nlohmann/fifo_map#master"
   },
   "napa-config": {
     "cache": false
   },
   "devDependencies": {
-    "napa": "3.0.0",
-    "tape": "5.0.0"
+    "gen-esm-wrapper": "^1.0.4",
+    "napa": "^3.0.0",
+    "tape": "^5.0.0"
   }
 }
