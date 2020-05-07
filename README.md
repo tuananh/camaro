@@ -109,7 +109,7 @@ const xml = `
  *      - call the XPath function `title-case` on field `name` and assign it to `name` field of the output.
  *      - get the attribute `jerseyNumber` from XML node player
  *      - get the `yearOfBirth` attribute from `yearOfBirth` and cast it to number.
- *      - cast `isRetired` to true if its string value equals to "true"
+ *      - cast `isRetired` to true if its string value equals to "true", and false otherwise.
  */
 
 const template = ['players/player', {
