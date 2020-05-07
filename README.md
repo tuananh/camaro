@@ -77,26 +77,33 @@ For complete API documentation, please see [API.md](API.md)
 
 ```js
 const { ready, transform, prettyPrint } = require('camaro')
-const fs = require('fs')
 
-const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
-const template = {
-    cache_key: '/HotelListResponse/cacheKey',
-    hotels: ['//HotelSummary', {
-        hotel_id: 'hotelId',
-        name: 'name',
-        rooms: ['RoomRateDetailsList/RoomRateDetails', {
-            rates: ['RateInfos/RateInfo', {
-                currency: 'ChargeableRateInfo/@currencyCode',
-                non_refundable: 'boolean(nonRefundable = "true")',
-                price: 'number(ChargeableRateInfo/@total)'
-            }],
-            room_name: 'roomDescription',
-            room_type_id: 'roomTypeCode'
-        }]
-    }],
-    session_id: '/HotelListResponse/customerSessionId'
-}
+const xml = `
+    <players>
+        <player jerseyNumber="10">
+            <name>wayne rooney</name>
+            <isRetired>false</isRetired>
+            <yearOfBirth>1985</yearOfBirth>
+        </player>
+        <player jerseyNumber="7">
+            <name>cristiano ronaldo</name>
+            <isRetired>false</isRetired>
+            <yearOfBirth>1985</yearOfBirth>
+        </player>
+        <player jerseyNumber="7">
+            <name>eric cantona</name>
+            <isRetired>true</isRetired>
+            <yearOfBirth>1966</yearOfBirth>
+        </player>
+    </players>
+`
+
+const template = ['players/player', {
+    name: 'title-case(name)',
+    jerseyNumber: '@jerseyNumber',
+    yearOfBirth: 'number(yearOfBirth)',
+    isRetired: 'boolean(isRetired)'
+}]
 
 ;(async function () {
     await ready()
@@ -106,8 +113,53 @@ const template = {
     const prettyStr = await prettyPrint(xml, { indentSize: 4})
     console.log(prettyStr)
 })()
+```
 
+Output of `transform()`
 
+```
+[
+    {
+        name: 'Wayne Rooney',
+        jerseyNumber: 10,
+        yearOfBirth: 1985,
+        isRetired: true,
+    },
+    {
+        name: 'Cristiano Ronaldo',
+        jerseyNumber: 7,
+        yearOfBirth: 1985,
+        isRetired: true,
+    },
+    {
+        name: 'Eric Cantona',
+        jerseyNumber: 7,
+        yearOfBirth: 1966,
+        isRetired: true,
+    }
+]
+```
+
+And output of `prettyPrint()`
+
+```
+<players>
+    <player jerseyNumber="10">
+        <name>Wayne Rooney</name>
+        <isRetired>false</isRetired>
+        <yearOfBirth>1985</yearOfBirth>
+    </player>
+    <player jerseyNumber="7">
+        <name>Cristiano Ronaldo</name>
+        <isRetired>false</isRetired>
+        <yearOfBirth>1985</yearOfBirth>
+    </player>
+    <player jerseyNumber="7">
+        <name>Eric Cantona</name>
+        <isRetired>true</isRetired>
+        <yearOfBirth>1966</yearOfBirth>
+    </player>
+</players>
 ```
 
 ## Licence
