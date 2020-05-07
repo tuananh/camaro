@@ -102,7 +102,7 @@ const template = ['players/player', {
     name: 'title-case(name)',
     jerseyNumber: '@jerseyNumber',
     yearOfBirth: 'number(yearOfBirth)',
-    isRetired: 'boolean(isRetired)'
+    isRetired: 'boolean(isRetired = "true")'
 }]
 
 ;(async function () {
@@ -123,13 +123,13 @@ Output of `transform()`
         name: 'Wayne Rooney',
         jerseyNumber: 10,
         yearOfBirth: 1985,
-        isRetired: true,
+        isRetired: false,
     },
     {
         name: 'Cristiano Ronaldo',
         jerseyNumber: 7,
         yearOfBirth: 1985,
-        isRetired: true,
+        isRetired: false,
     },
     {
         name: 'Eric Cantona',
