@@ -98,6 +98,20 @@ const xml = `
     </players>
 `
 
+/**
+ * the template can be an object or an array depends on what output you want the XML to be transformed to.
+ * 
+ * ['players/player', {name, ...}] means that: Get all the nodes with this XPath expression `players/player`.
+ *      - the first param is the XPath path to get all the XML nodes.
+ *      - the second param is a string or an object that describe the shape of the array element and how to get it.
+ * 
+ * For each of those XML node
+ *      - call the XPath function `title-case` on field `name` and assign it to `name` field of the output.
+ *      - get the attribute `jerseyNumber` from XML node player
+ *      - get the `yearOfBirth` attribute from `yearOfBirth` and cast it to number.
+ *      - cast `isRetired` to true if its string value equals to "true"
+ */
+
 const template = ['players/player', {
     name: 'title-case(name)',
     jerseyNumber: '@jerseyNumber',
