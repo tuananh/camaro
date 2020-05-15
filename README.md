@@ -78,7 +78,7 @@ The rest are pretty much vanilla XPath 1.0.
 For complete API documentation, please see [API.md](API.md)
 
 ```js
-const { ready, transform, prettyPrint } = require('camaro')
+const { transform, prettyPrint } = require('camaro')
 
 const xml = `
     <players>

@@ -3,7 +3,7 @@ const Module = require('./dist/camaro')
 let cachedInstance
 
 function callWasmBinding(methodName, ...args) {
-    if (!cachedInstance) throw new Error('camaro is not yet initialized. You need to call `ready()` first.')
+    if (!cachedInstance) throw new Error('camaro is not initialized yet.')
     return cachedInstance[methodName](...args)
 }
 
