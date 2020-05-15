@@ -1,5 +1,5 @@
 const t = require('tape')
-const { ready, transform } = require('../')
+const { transform } = require('../')
 
 t.test(
     'camaro should be able to parse an array template',
@@ -11,7 +11,7 @@ t.test(
                 <item>3</item>
             </root>
         `
-        await ready()
+        
         const result = await transform(xml, ['root/item', 'number(.)'])
         t.deepEqual(result, [1, 2, 3])
 

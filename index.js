@@ -11,10 +11,6 @@ function isEmptyObject(obj) {
     return Object.entries(obj).length === 0 && obj.constructor === Object
 }
 
-async function ready() {
-    return Promise.resolve()
-}
-
 /**
  * convert xml to json base on the template object
  * @param {string} xml xml string
@@ -32,8 +28,7 @@ async function transform(xml, template) {
 
     return pool.runTask({
         fn: 'transform',
-        xml,
-        template: JSON.stringify(template),
+        args: [xml, JSON.stringify(template)],
     })
 }
 
@@ -47,7 +42,7 @@ async function toJson(xml) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return pool.runTask({ fn: 'toJson', xml })
+    return pool.runTask({ fn: 'toJson', args: [xml] })
 }
 
 /**
@@ -62,7 +57,7 @@ async function prettyPrint(xml, opts = { indentSize: 2 }) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return pool.runTask({ fn: 'prettyPrint', xml, opts })
+    return pool.runTask({ fn: 'prettyPrint', args: [xml, opts] })
 }
 
-module.exports = { ready, transform, toJson, prettyPrint }
+module.exports = { transform, toJson, prettyPrint }

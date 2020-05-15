@@ -40,6 +40,6 @@ const { transform } = require('../')
     await Promise.all(promises)
     const end = process.hrtime(start)
     const durationMs = (end[0] + end[1] / 1e9) * 1000
-    console.log('camaro (pooled): finished %s iterations in %s ms', ITERATIONS, durationMs)
-    console.log('camaro (pooled): %s ops/sec', ITERATIONS / durationMs * 1000)
+    console.log('camaro (v6): finished %s iterations in %s ms', ITERATIONS, durationMs)
+    console.log('camaro (v6): %s ops/sec', ITERATIONS / durationMs * 1000)
 })()

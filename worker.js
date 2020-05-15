@@ -19,7 +19,7 @@ const ready = new Promise((resolve, reject) => {
     }
 })
 
-module.exports = async ({fn, xml, template}) => {    
+module.exports = async ({fn, args}) => {    
     await ready
-    return callWasmBinding(fn, xml, template)
+    return callWasmBinding(fn, ...args)
 }
