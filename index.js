@@ -1,4 +1,7 @@
-const Module = require('./dist/camaro')
+const { resolve } = require('path')
+const WorkerPool = require('piscina')
+
+const pool = new WorkerPool({ filename: resolve(__dirname, 'worker.js') })
 
 function isNonEmptyString(str) {
     return typeof str === 'string' && str.length > 0
@@ -8,25 +11,8 @@ function isEmptyObject(obj) {
     return Object.entries(obj).length === 0 && obj.constructor === Object
 }
 
-let cachedInstance
-
-function callWasmBinding(methodName, ...args) {
-    if (!cachedInstance) throw new Error('camaro is not yet initialized. You need to call `ready()` first.')
-    return cachedInstance[methodName](...args)
-}
-
-const ready = () => {
-    return new Promise((resolve, reject) => {
-        if (!cachedInstance) {
-            const instance = Module()
-            instance.onRuntimeInitialized = () => {
-                cachedInstance = instance
-                resolve()
-            }
-        } else {            
-            resolve()
-        }
-    })
+async function ready() {
+    return Promise.resolve()
 }
 
 /**
@@ -44,8 +30,11 @@ async function transform(xml, template) {
         throw new TypeError('2nd argument (template) must be an object')
     }
 
-    const templateString = JSON.stringify(template)
-    return callWasmBinding('transform', xml, templateString)
+    return pool.runTask({
+        fn: 'transform',
+        xml,
+        template: JSON.stringify(template),
+    })
 }
 
 /**
@@ -58,7 +47,7 @@ async function toJson(xml) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return callWasmBinding('toJson', xml)
+    return pool.runTask({ fn: 'toJson', xml })
 }
 
 /**
@@ -68,12 +57,12 @@ async function toJson(xml) {
  * @param {number} [opts.indentSize=2] indent size, default=2
  * @returns {string} xml pretty print string
  */
-async function prettyPrint(xml, opts={indentSize: 2}) {
+async function prettyPrint(xml, opts = { indentSize: 2 }) {
     if (!isNonEmptyString(xml)) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return callWasmBinding('prettyPrint', xml, opts)
+    return pool.runTask({ fn: 'prettyPrint', xml, opts })
 }
 
 module.exports = { ready, transform, toJson, prettyPrint }

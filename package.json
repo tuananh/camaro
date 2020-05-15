@@ -57,5 +57,8 @@
     "gen-esm-wrapper": "^1.0.4",
     "napa": "^3.0.0",
     "tape": "^5.0.0"
+  },
+  "dependencies": {
+    "piscina": "^1.4.0"
   }
 }
