@@ -27,6 +27,8 @@
 ## 🚧 Upgrading notes from version 3 🚧
 
 - camaro v4 slows down quite a bit since switching to WebAssembly. It's still the fastest but slower by big margin. WebAssembly and Emscripten are rather new to me so bare with me while I'm figuring out the performance issue. If you need pure speed, just use camaro v3.
+- as of Node 12, `worker_threads` module is no longer experiment. If you must squeeze every last bit of performance, see the example with thread worker pool in [examples/worker-threads-pool.md](examples/worker-threads-pool.md).
+
 - 🚨BREAKING: `transform()` is now an async function.
 - 🚨BREAKING: change the way transform is imported `const { transform } = require('camaro')`
 - plan to add `toJson()` function to convert the whole XML input.
