@@ -60,4 +60,4 @@ async function prettyPrint(xml, opts = { indentSize: 2 }) {
     return pool.runTask({ fn: 'prettyPrint', args: [xml, opts] })
 }
 
-module.exports = { transform, toJson, prettyPrint, pool }
+module.exports = { transform, toJson, prettyPrint }

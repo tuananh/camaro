@@ -1,5 +1,5 @@
 const fs = require('fs')
-const { transform, pool } = require('..')
+const { transform } = require('..')
 const fastXmlParser = require('fast-xml-parser')
 const xml2js = require('xml2js')
 const xmljs = require('xml-js')
@@ -18,9 +18,7 @@ async function bench({ name = '', fn, duration = 5000, async = false } = {}) {
     if (async) {
         let results = []
 
-        // TODO(anh): I'm exposing pool for benchmarking purpose
-        // should remove this. There's no reason user should know about internal implementation
-        while (pool.queueSize === 0) {
+        while ((process.hrtime.bigint() - start) / 1_000_000n < duration) {
             results.push(scheduleTasks())
         }
 
