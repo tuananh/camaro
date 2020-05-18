@@ -19,30 +19,19 @@
 * Written in C++ and compiled down to WebAssembly so no compilation needed.
 * Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
 * No need to build binary whenever a new Node version released.
+* Scale well with multi-core processor by use of `worker_threads` pool (Node >= 12).
 * AWS Lambda friendly (or serverless in general).
-* SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
+* SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest XML parser around.
 * Small footprint (Zero dependencies).
 * Pretty print XML.
-
-## 🚧 Upgrading notes from version 3 🚧
-
-- camaro v4 slows down quite a bit since switching to WebAssembly. It's still the fastest but slower by big margin. WebAssembly and Emscripten are rather new to me so bare with me while I'm figuring out the performance issue. If you need pure speed, just use camaro v3.
-- as of Node 12, `worker_threads` module is no longer experiment. If you must squeeze every last bit of performance, see the example with thread worker pool in [examples/worker-threads-pool.md](examples/worker-threads-pool.md).
-
-- 🚨BREAKING: `transform()` is now an async function.
-- 🚨BREAKING: change the way transform is imported `const { transform } = require('camaro')`
-- plan to add `toJson()` function to convert the whole XML input.
-- DONE: plan to add `prettyPrint()` to pretty print XML.
 
 ## 🔥 Benchmark
 
 ```
-camaro x 362 ops/sec ±0.31% (87 runs sampled)
-rapidx2j x 226 ops/sec ±0.27% (88 runs sampled)
-xml2json x 46.32 ops/sec ±1.39% (61 runs sampled)
-xml2js x 50.51 ops/sec ±7.22% (68 runs sampled)
-fast-xml-parser x 256 ops/sec ±0.63% (86 runs sampled)
-xml-js x 45.05 ops/sec ±6.19% (61 runs sampled)
+camaro v6: 1,395.6 ops/sec
+fast-xml-parser: 153 ops/sec
+xml2js: 47.6 ops/sec
+xml-js: 51 ops/sec
 ```
 
 * Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
