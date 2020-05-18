@@ -2,19 +2,17 @@
 
 Never mind about the actual number. You can check the percentage differences between package for reference.
 
-Benchmark ran on AMZ Ryzen 3800X.
+Benchmark ran on AMD Ryzen 3800X.
 
 ## transform()
 
 `node benchmark/transform`
 
 ```
-camaro x 362 ops/sec ±0.31% (87 runs sampled)
-rapidx2j x 226 ops/sec ±0.27% (88 runs sampled)
-xml2json x 46.32 ops/sec ±1.39% (61 runs sampled)
-xml2js x 50.51 ops/sec ±7.22% (68 runs sampled)
-fast-xml-parser x 256 ops/sec ±0.63% (86 runs sampled)
-xml-js x 45.05 ops/sec ±6.19% (61 runs sampled)
+camaro v6: 2003.2 ops/sec
+fast-xml-parser: 296 ops/sec
+xml2js: 50.2 ops/sec
+xml-js: 50 ops/sec
 ```
 
 ## prettyPrint()
