@@ -1,8 +1,7 @@
 const fs = require('fs')
-const { transform, pool } = require('..')
-const fastXmlParser = require('fast-xml-parser')
-const xml2js = require('xml2js')
-const xmljs = require('xml-js')
+const { prettyPrint, pool } = require('..')
+const prettyData = require('pretty-data')
+const prettifyXml = require('prettify-xml')
 
 /**
  *
@@ -49,46 +48,18 @@ async function bench({ name = '', fn, duration = 5000, async = false } = {}) {
     }
 }
 
-const xml = fs.readFileSync(__dirname + '/../examples/ean.xml', 'utf-8')
-const template = {
-    cache_key: '/HotelListResponse/cacheKey',
-    hotels: [
-        '//HotelSummary',
-        {
-            hotel_id: 'hotelId',
-            name: 'name',
-            rooms: [
-                'RoomRateDetailsList/RoomRateDetails',
-                {
-                    rates: [
-                        'RateInfos/RateInfo',
-                        {
-                            currency: 'ChargeableRateInfo/@currencyCode',
-                            non_refundable: 'boolean(nonRefundable = "true")',
-                            price: 'number(ChargeableRateInfo/@total)',
-                        },
-                    ],
-                    room_name: 'roomDescription',
-                    room_type_id: 'roomTypeCode',
-                },
-            ],
-        },
-    ],
-    session_id: '/HotelListResponse/customerSessionId',
-}
+const xml = fs.readFileSync(__dirname + '/../examples/simple.xml', 'utf-8')
 
 async function runBenchmarks() {
     await bench({
         name: 'camaro v6',
-        fn: () => transform(xml, template),
+        fn: () => prettyPrint(xml),
         async: true,
     })
 
-    await bench({name: 'fast-xml-parser', fn: () => fastXmlParser.parse(xml)})
+    await bench({name: 'pretty-data', fn: () => prettyData.pd.xml(xml) })
 
-    await bench({name: 'xml2js', fn: () => xml2js.parseString(xml) })
-
-    await bench({name: 'xml-js', fn: () => xmljs.xml2js(xml) })
+    await bench({name: 'prettifyXml', fn: () => prettifyXml(xml) })
 
 }
 
