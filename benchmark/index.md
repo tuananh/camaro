@@ -15,6 +15,29 @@ xml2js: 47.6 ops/sec
 xml-js: 51 ops/sec
 ```
 
+I have included the test for various XML file sizes: 300KB/ 100KB / 60KB and 7KB. Á you can see `camaro` is not very good with small XML file. However, its performance excels with big XML file.
+
+The tested XML files are included in `benchmarks/fixtures` folder.
+
+## 300 KB XML file
+
+![](fixtures/300kb.png)
+
+
+## 100 KB XML file
+
+![](fixtures/100kb.png)
+
+
+## 60 KB XML file
+
+![](fixtures/60kb.png)
+
+
+## 7 KB XML file
+
+![](fixtures/7kb.png)
+
 ## prettyPrint()
 
 `node benchmark/pretty-print`

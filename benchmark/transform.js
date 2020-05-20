@@ -36,7 +36,7 @@ async function bench({ name = '', fn, iterations = 10000, async = false } = {}) 
     }
 }
 
-const xml = fs.readFileSync(__dirname + '/../examples/ean.xml', 'utf-8')
+const xml = fs.readFileSync(__dirname + '/./fixtures/100kb.xml', 'utf-8')
 const template = {
     cache_key: '/HotelListResponse/cacheKey',
     hotels: [
