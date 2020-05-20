@@ -17,7 +17,7 @@ function isEmptyObject(obj) {
  * @param {object} template template object
  * @returns {object} xml converted to json object based on the template
  */
-async function transform(xml, template) {
+function transform(xml, template) {
     if (!isNonEmptyString(xml)) {
         throw new TypeError('1st argument (xml) must be a non-empty string')
     }
@@ -37,7 +37,7 @@ async function transform(xml, template) {
  * @param {string} xml xml string
  * @returns {object} json object converted from the input xml
  */
-async function toJson(xml) {
+function toJson(xml) {
     if (!isNonEmptyString(xml)) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
@@ -52,7 +52,7 @@ async function toJson(xml) {
  * @param {number} [opts.indentSize=2] indent size, default=2
  * @returns {string} xml pretty print string
  */
-async function prettyPrint(xml, opts = { indentSize: 2 }) {
+function prettyPrint(xml, opts = { indentSize: 2 }) {
     if (!isNonEmptyString(xml)) {
         throw new TypeError('expecting xml input to be non-empty string')
     }

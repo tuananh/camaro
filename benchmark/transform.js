@@ -9,36 +9,25 @@ const xmljs = require('xml-js')
  * @param {object} param0
  * @param {string} param0.name name of the benchmark
  * @param {function} param0.fn function to benchmark
- * @param {number} param0.duration duration in millisecond
+ * @param {number} param0.iterations number of iterations
  */
-async function bench({ name = '', fn, duration = 5000, async = false } = {}) {
+async function bench({ name = '', fn, iterations = 10000, async = false } = {}) {
     const start = process.hrtime.bigint()
-    let done = 0
 
     if (async) {
         let results = []
-
-        while ((process.hrtime.bigint() - start) / 1_000_000n < duration) {
-            results.push(scheduleTasks())
+        for (let i = 0; i < iterations; i++) {
+            results.push(fn())
         }
-
-        async function scheduleTasks() {
-            while ((process.hrtime.bigint() - start) / 1_000_000n < duration) {
-                await fn()
-                done++
-            }
-        }
-
         await Promise.all(results)
     } else {
-        while ((process.hrtime.bigint() - start) / 1_000_000n < duration) {
+        for (let i = 0; i < iterations; i++) {
             fn()
-            done++
         }
     }
-
-    const opsPerSecond = done / duration * 1e3;
-    console.log(`${name}: %s ops/sec`, opsPerSecond.toLocaleString())
+    const duration = Number((process.hrtime.bigint() - start) / 1_000_000n)
+    const opsPerSecond = iterations / duration * 1e3;
+    console.log(`${name}: %s ops/sec`, opsPerSecond.toFixed(0))
 
     return {
         name,
