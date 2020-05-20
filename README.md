@@ -14,14 +14,19 @@
 
 ## 🤘 Features
 
-* Transform XML to JSON. Only take properties that you're interested in.
-* Output is a ready to use JS object.
+* Transform XML to JSON.
+    * Only take properties that you're interested in.
+    * Output is a ready to use JS object.
+
 * Written in C++ and compiled down to WebAssembly so no compilation needed.
-* Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
-* No need to build binary whenever a new Node version released.
-* Scale well with multi-core processor by use of `worker_threads` pool (Node >= 12).
-* AWS Lambda friendly (or serverless in general).
-* SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest XML parser around.
+    * No need to build binary whenever a new Node version released.
+    * Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
+    * AWS Lambda friendly (or serverless in general).
+
+* It's pretty fast on large XML strings
+    * We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest XML parser around.
+    * Scale well with multi-core processor by use of `worker_threads` pool (Node >= 12).
+
 * Small footprint (Zero dependencies).
 * Pretty print XML.
 
@@ -36,10 +41,9 @@ xml-js: 51 ops/sec
 
 * Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
 The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
-
-* Benchmark run on MacBookPro14,1 - Intel Core i5 CPU @ 2.30GHz using Node v8.10.0.
-
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
+* 🚧 Performance on small XML strings will probably be worse than native JavaScript implementation. If your use cases consist of small XML strings only, you probably don't need this.
+* Some other libraries that I used to use for benchmark like `rapidx2j` or `xml2json` no longer works on Node 14 so I remove them from the benchmark.
 
 For complete benchmark, see [benchmark/index.md](benchmark/index.md).
 
@@ -60,11 +64,13 @@ We also introduce some custom syntax such as:
 
 * if a path start with `#`, that means it's a constant. E.g: `#1234` will return `1234`
 * if a path is empty, return blank
-* Some string manipulation functions which are not availble in XPath 1.0 such as `lower-case`, `upper-case`, `title-case`, `camel-case`, `snake-case` and `string-join`. Eventually, I'm hoping to add all XPath 2.0 functions but these are all that I need for now. PRs welcome.
+* Some string manipulation functions which are not availble in XPath 1.0 such as `lower-case`, `upper-case`, `title-case`, `camel-case`, `snake-case`, `string-join` or `raw`. Eventually, I'm hoping to add all XPath 2.0 functions but these are all that I need for now. PRs welcome.
 
 The rest are pretty much vanilla XPath 1.0.
 
 For complete API documentation, please see [API.md](API.md)
+
+Additional examples can be found in the examples folder at https://github.com/tuananh/camaro/tree/develop/examples.
 
 ```js
 const { transform, prettyPrint } = require('camaro')
@@ -111,7 +117,6 @@ const template = ['players/player', {
 }]
 
 ;(async function () {
-    await ready()
     const result = await transform(xml, template)
     console.log(result)
 
