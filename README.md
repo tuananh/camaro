@@ -18,16 +18,15 @@
     * Only take properties that you're interested in.
     * Output is a ready to use JS object.
 
-* Written in C++ and compiled down to WebAssembly so no compilation needed.
+* Written in C++ and compiled down to WebAssembly so no re-compilation needed.
     * No need to build binary whenever a new Node version released.
     * Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
     * AWS Lambda friendly (or serverless in general).
 
-* It's pretty fast on large XML strings
+* It's pretty fast on large XML strings.
     * We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest XML parser around.
     * Scale well with multi-core processor by use of `worker_threads` pool (Node >= 12).
 
-* Small footprint (Zero dependencies).
 * Pretty print XML.
 
 ## 🔥 Benchmark
