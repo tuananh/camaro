@@ -10,8 +10,6 @@
 [![TypeScript definitions on DefinitelyTyped](https://badgen.net/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
 [![npm](https://badgen.net/npm/dt/camaro)](https://npm.im/camaro)
 
-[Demo on CodeSandbox.io](https://codesandbox.io/s/static-deg9w?fontsize=14)
-
 ## 🤘 Features
 
 * Transform XML to JSON.
@@ -20,7 +18,7 @@
 
 * Written in C++ and compiled down to WebAssembly so no re-compilation needed.
     * No need to build binary whenever a new Node version released.
-    * Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
+    * Work on all major platforms (OS X, Linux and Windows). See Travis CI and AppVeyor build status for details.
     * AWS Lambda friendly (or serverless in general).
 
 * It's pretty fast on large XML strings.
