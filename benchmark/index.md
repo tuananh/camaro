@@ -19,24 +19,13 @@ I have included the test for various XML file sizes: 300KB/ 100KB / 60KB and 7KB
 
 The tested XML files are included in `benchmarks/fixtures` folder.
 
-## 300 KB XML file
+300 KB XML file            |  100 KB XML file
+:-------------------------:|:-------------------------:
+![](fixtures/300kb.png)    |  ![](fixtures/100kb.png)
 
-![](fixtures/300kb.png)
-
-
-## 100 KB XML file
-
-![](fixtures/100kb.png)
-
-
-## 60 KB XML file
-
-![](fixtures/60kb.png)
-
-
-## 7 KB XML file
-
-![](fixtures/7kb.png)
+60 KB XML file             |  7 KB XML file
+:-------------------------:|:-------------------------:
+![](fixtures/60kb.png)     |  ![](fixtures/7kb.png)
 
 ## prettyPrint()
 

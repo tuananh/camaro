@@ -38,18 +38,22 @@ xml2js: 47.6 ops/sec
 xml-js: 51 ops/sec
 ```
 
-## 300 KB XML file benchmark
+300 KB XML file                      |  100 KB XML file
+:-----------------------------------:|:-------------------------:
+![](benchmark/fixtures/300kb.png)    |  ![](benchmark/fixtures/100kb.png)
 
-XML file is an actual XML response from Expedia API.
+60 KB XML file                       |  7 KB XML file
+:-----------------------------------:|:-------------------------:
+![](benchmark/fixtures/60kb.png)     |  ![](benchmark/fixtures/7kb.png)
+
+XML file is an actual XML response from Expedia API. I just delete some nodes to change its size for benchmarking.
 
 For complete benchmark, see [benchmark/index.md](benchmark/index.md).
-
-![](benchmark/fixtures/300kb.png)
 
 * Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
 The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
-* 🚧 Performance on small XML strings will probably be worse than native JavaScript implementation. If your use cases consist of small XML strings only, you probably don't need this.
+* 🚧 Performance on small XML strings will probably be worse than pure JavaScript implementation. If your use cases consist of small XML strings only, you probably don't need this.
 * Some other libraries that I used to use for benchmark like `rapidx2j` or `xml2json` no longer works on Node 14 so I remove them from the benchmark.
 
 ![intro](intro.png)
