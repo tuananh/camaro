@@ -1,5 +1,5 @@
 const t = require('tape')
-const { ready, transform } = require('../')
+const { transform } = require('../')
 const isWin = process.platform === 'win32'
 
 const xml = `
@@ -28,7 +28,7 @@ const xml = `
 `
 
 t.test('test function upper-case()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         upperCase: ['//items/item', 'upper-case(.)']
     })
@@ -39,7 +39,7 @@ t.test('test function upper-case()', async (t) => {
 })
 
 t.test('test function lower-case()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         lowerCase: ['//items/item', 'lower-case(.)']
     })
@@ -50,7 +50,7 @@ t.test('test function lower-case()', async (t) => {
 })
 
 t.test('test function title-case()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         titleCase: ['//items/item', 'title-case(.)']
     })
@@ -61,7 +61,7 @@ t.test('test function title-case()', async (t) => {
 })
 
 t.test('test function title-case() unicode', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         titleCase: ['//unicode/item', 'title-case(.)']
     })
@@ -72,7 +72,7 @@ t.test('test function title-case() unicode', async (t) => {
 })
 
 t.test('test function title-case() upper after symbols', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         titleCase: ['//special/item', 'title-case(.)']
     })
@@ -83,7 +83,7 @@ t.test('test function title-case() upper after symbols', async (t) => {
 })
 
 t.test('test function camel-case()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         camelCase: ['//items/item', 'camel-case(.)']
     })
@@ -94,7 +94,7 @@ t.test('test function camel-case()', async (t) => {
 })
 
 t.test('test function snake-case()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         snakeCase: ['//items/item', 'snake-case(.)']
     })
@@ -105,7 +105,7 @@ t.test('test function snake-case()', async (t) => {
 })
 
 t.test('test nested function calls', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         snakeCase: ['//items/item', 'snake-case(lower-case(.))']
     })
@@ -116,42 +116,42 @@ t.test('test nested function calls', async (t) => {
 })
 
 t.test('test function round()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, { round: 'round(root/single)' })
     t.equal(result.round, 20)
     t.end()
 })
 
 t.test('test function floor()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, { floor: 'floor(root/single)' })
     t.equal(result.floor, 20)
     t.end()
 })
 
 t.test('test function ceiling()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, { ceiling: 'ceiling(root/single)' })
     t.equal(result.ceiling, 21)
     t.end()
 })
 
 t.test('test function sum()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, { sum: 'sum(root/number)' })
     t.equal(result.sum, 30.5)
     t.end()
 })
 
 t.test('test function count()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, { count: 'count(root/number)' })
     t.equal(result.count, 2)
     t.end()
 })
 
 t.test('test function boolean()', async (t) => {
-    await ready()
+    
     const result = await transform(xml, {
         boolean: 'boolean(root/boolean = "TrUe")',
         boolean_false: 'boolean(root/boolean = "true")'
@@ -162,7 +162,7 @@ t.test('test function boolean()', async (t) => {
 })
 
 t.test('test function string-join() with delimeter', async (t) => {
-    await ready()
+    
     const { joinedString } = await transform(xml, {
         joinedString: 'string-join(//list/item, ", ")'
     })
@@ -171,7 +171,7 @@ t.test('test function string-join() with delimeter', async (t) => {
 })
 
 t.test('test function string-join() without delimeter', async (t) => {
-    await ready()
+    
     const { joinedString } = await transform(xml, {
         joinedString: 'string-join(//list/item)'
     })

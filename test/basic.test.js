@@ -1,6 +1,6 @@
 const fs = require('fs')
 const t = require('tape')
-const { ready, transform } = require('../')
+const { transform } = require('../')
 
 t.test('basic test', async (t) => {
     const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
@@ -23,7 +23,7 @@ t.test('basic test', async (t) => {
         path_not_exist: '/HotelListResponse/nonExistenPath',
         empty_array: []
     }
-    await ready()
+    
     const result = await transform(xml, template)
     t.equal(typeof result, 'object', 'result is expected to be object')
     t.equal(result.cache_key, '-48a4e19f:15bec159775:50eb', 'parse cache_key ok')

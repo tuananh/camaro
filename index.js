@@ -1,4 +1,7 @@
-const Module = require('./dist/camaro')
+const { resolve } = require('path')
+const WorkerPool = require('piscina')
+
+const pool = new WorkerPool({ filename: resolve(__dirname, 'worker.js') })
 
 function isNonEmptyString(str) {
     return typeof str === 'string' && str.length > 0
@@ -8,34 +11,13 @@ function isEmptyObject(obj) {
     return Object.entries(obj).length === 0 && obj.constructor === Object
 }
 
-let cachedInstance
-
-function callWasmBinding(methodName, ...args) {
-    if (!cachedInstance) throw new Error('camaro is not yet initialized. You need to call `ready()` first.')
-    return cachedInstance[methodName](...args)
-}
-
-const ready = () => {
-    return new Promise((resolve, reject) => {
-        if (!cachedInstance) {
-            const instance = Module()
-            instance.onRuntimeInitialized = () => {
-                cachedInstance = instance
-                resolve()
-            }
-        } else {            
-            resolve()
-        }
-    })
-}
-
 /**
  * convert xml to json base on the template object
  * @param {string} xml xml string
  * @param {object} template template object
  * @returns {object} xml converted to json object based on the template
  */
-async function transform(xml, template) {
+function transform(xml, template) {
     if (!isNonEmptyString(xml)) {
         throw new TypeError('1st argument (xml) must be a non-empty string')
     }
@@ -44,8 +26,10 @@ async function transform(xml, template) {
         throw new TypeError('2nd argument (template) must be an object')
     }
 
-    const templateString = JSON.stringify(template)
-    return callWasmBinding('transform', xml, templateString)
+    return pool.runTask({
+        fn: 'transform',
+        args: [xml, JSON.stringify(template)],
+    })
 }
 
 /**
@@ -53,12 +37,13 @@ async function transform(xml, template) {
  * @param {string} xml xml string
  * @returns {object} json object converted from the input xml
  */
-async function toJson(xml) {
-    if (!isNonEmptyString(xml)) {
-        throw new TypeError('expecting xml input to be non-empty string')
-    }
+function toJson(xml) {
+    throw new Error('Not yet implemented')
+    // if (!isNonEmptyString(xml)) {
+    //     throw new TypeError('expecting xml input to be non-empty string')
+    // }
 
-    return callWasmBinding('toJson', xml)
+    // return pool.runTask({ fn: 'toJson', args: [xml] })
 }
 
 /**
@@ -68,12 +53,12 @@ async function toJson(xml) {
  * @param {number} [opts.indentSize=2] indent size, default=2
  * @returns {string} xml pretty print string
  */
-async function prettyPrint(xml, opts={indentSize: 2}) {
+function prettyPrint(xml, opts = { indentSize: 2 }) {
     if (!isNonEmptyString(xml)) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return callWasmBinding('prettyPrint', xml, opts)
+    return pool.runTask({ fn: 'prettyPrint', args: [xml, opts] })
 }
 
-module.exports = { ready, transform, toJson, prettyPrint }
+module.exports = { transform, toJson, prettyPrint }

@@ -1,6 +1,6 @@
 {
   "name": "camaro",
-  "version": "5.0.3",
+  "version": "6.0.0-alpha.1",
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
@@ -57,5 +57,8 @@
     "gen-esm-wrapper": "^1.0.4",
     "napa": "^3.0.0",
     "tape": "^5.0.0"
+  },
+  "dependencies": {
+    "piscina": "^1.4.0"
   }
 }

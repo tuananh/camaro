@@ -1,6 +1,6 @@
 const fs = require('fs')
 const t = require('tape')
-const { ready, transform } = require('..')
+const { transform } = require('..')
 
 t.test('raw() test', async t => {
     const xml = fs.readFileSync('examples/simple.xml', 'utf-8')
@@ -10,7 +10,7 @@ t.test('raw() test', async t => {
         raw1: 'raw(root/items)',
         raw1NodeSet: 'raw(//item)'
     }
-    await ready()
+    
     const result = await transform(xml, template)
 
     const rawXml = '<items>\n\t<item>1</item>\n\t<item>2</item>\n</items>\n'
