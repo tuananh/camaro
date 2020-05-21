@@ -1,4 +1,4 @@
-# 4.0.2 API Reference
+# 6.0.0 API Reference
 
 - [camaro](#camaro)
   - [`transform(xml, template)`](#transformxml-template)
