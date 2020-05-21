@@ -14,43 +14,40 @@
 
 ## 🤘 Features
 
-* Transform XML to JSON. Only take properties that you're interested in.
-* Output is a ready to use JS object.
-* Written in C++ and compiled down to WebAssembly so no compilation needed.
-* Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
-* No need to build binary whenever a new Node version released.
-* AWS Lambda friendly (or serverless in general).
-* SUPER FAST!! We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest xml parser around.
-* Small footprint (Zero dependencies).
+* Transform XML to JSON.
+    * Only take properties that you're interested in.
+    * Output is a ready to use JS object.
+
+* Written in C++ and compiled down to WebAssembly so no re-compilation needed.
+    * No need to build binary whenever a new Node version released.
+    * Work on all major platforms (OS X, Linux and Windows and the web). See Travis CI and AppVeyor build status for details.
+    * AWS Lambda friendly (or serverless in general).
+
+* It's pretty fast on large XML strings.
+    * We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest XML parser around.
+    * Scale well with multi-core processor by use of `worker_threads` pool (Node >= 12).
+
 * Pretty print XML.
-
-## 🚧 Upgrading notes from version 3 🚧
-
-- camaro v4 slows down quite a bit since switching to WebAssembly. It's still the fastest but slower by big margin. WebAssembly and Emscripten are rather new to me so bare with me while I'm figuring out the performance issue. If you need pure speed, just use camaro v3.
-- 🚨BREAKING: `transform()` is now an async function.
-- 🚨BREAKING: change the way transform is imported `const { transform } = require('camaro')`
-- plan to add `toJson()` function to convert the whole XML input.
-- DONE: plan to add `prettyPrint()` to pretty print XML.
 
 ## 🔥 Benchmark
 
-```
-camaro x 362 ops/sec ±0.31% (87 runs sampled)
-rapidx2j x 226 ops/sec ±0.27% (88 runs sampled)
-xml2json x 46.32 ops/sec ±1.39% (61 runs sampled)
-xml2js x 50.51 ops/sec ±7.22% (68 runs sampled)
-fast-xml-parser x 256 ops/sec ±0.63% (86 runs sampled)
-xml-js x 45.05 ops/sec ±6.19% (61 runs sampled)
-```
+300 KB XML file                      |  100 KB XML file
+:-----------------------------------:|:-------------------------:
+![](benchmark/fixtures/300kb.png)    |  ![](benchmark/fixtures/100kb.png)
+
+60 KB XML file                       |  7 KB XML file
+:-----------------------------------:|:-------------------------:
+![](benchmark/fixtures/60kb.png)     |  ![](benchmark/fixtures/7kb.png)
+
+XML file is an actual XML response from Expedia API. I just delete some nodes to change its size for benchmarking.
+
+For complete benchmark, see [benchmark/index.md](benchmark/index.md).
 
 * Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
 The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
-
-* Benchmark run on MacBookPro14,1 - Intel Core i5 CPU @ 2.30GHz using Node v8.10.0.
-
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
-
-For complete benchmark, see [benchmark/index.md](benchmark/index.md).
+* 🚧 Performance on small XML strings will probably be worse than pure JavaScript implementation. If your use cases consist of small XML strings only, you probably don't need this.
+* Some other libraries that I used to use for benchmark like `rapidx2j` or `xml2json` no longer works on Node 14 so I remove them from the benchmark.
 
 ![intro](intro.png)
 
@@ -69,45 +66,112 @@ We also introduce some custom syntax such as:
 
 * if a path start with `#`, that means it's a constant. E.g: `#1234` will return `1234`
 * if a path is empty, return blank
-* Some string manipulation functions which are not availble in XPath 1.0 such as `lower-case`, `upper-case`, `title-case`, `camel-case`, `snake-case` and `string-join`. Eventually, I'm hoping to add all XPath 2.0 functions but these are all that I need for now. PRs welcome.
+* Some string manipulation functions which are not availble in XPath 1.0 such as `lower-case`, `upper-case`, `title-case`, `camel-case`, `snake-case`, `string-join` or `raw`. Eventually, I'm hoping to add all XPath 2.0 functions but these are all that I need for now. PRs welcome.
 
 The rest are pretty much vanilla XPath 1.0.
 
 For complete API documentation, please see [API.md](API.md)
 
-```js
-const { ready, transform, prettyPrint } = require('camaro')
-const fs = require('fs')
+Additional examples can be found in the examples folder at https://github.com/tuananh/camaro/tree/develop/examples.
 
-const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
-const template = {
-    cache_key: '/HotelListResponse/cacheKey',
-    hotels: ['//HotelSummary', {
-        hotel_id: 'hotelId',
-        name: 'name',
-        rooms: ['RoomRateDetailsList/RoomRateDetails', {
-            rates: ['RateInfos/RateInfo', {
-                currency: 'ChargeableRateInfo/@currencyCode',
-                non_refundable: 'boolean(nonRefundable = "true")',
-                price: 'number(ChargeableRateInfo/@total)'
-            }],
-            room_name: 'roomDescription',
-            room_type_id: 'roomTypeCode'
-        }]
-    }],
-    session_id: '/HotelListResponse/customerSessionId'
-}
+```js
+const { transform, prettyPrint } = require('camaro')
+
+const xml = `
+    <players>
+        <player jerseyNumber="10">
+            <name>wayne rooney</name>
+            <isRetired>false</isRetired>
+            <yearOfBirth>1985</yearOfBirth>
+        </player>
+        <player jerseyNumber="7">
+            <name>cristiano ronaldo</name>
+            <isRetired>false</isRetired>
+            <yearOfBirth>1985</yearOfBirth>
+        </player>
+        <player jerseyNumber="7">
+            <name>eric cantona</name>
+            <isRetired>true</isRetired>
+            <yearOfBirth>1966</yearOfBirth>
+        </player>
+    </players>
+`
+
+/**
+ * the template can be an object or an array depends on what output you want the XML to be transformed to.
+ * 
+ * ['players/player', {name, ...}] means that: Get all the nodes with this XPath expression `players/player`.
+ *      - the first param is the XPath path to get all the XML nodes.
+ *      - the second param is a string or an object that describe the shape of the array element and how to get it.
+ * 
+ * For each of those XML node
+ *      - call the XPath function `title-case` on field `name` and assign it to `name` field of the output.
+ *      - get the attribute `jerseyNumber` from XML node player
+ *      - get the `yearOfBirth` attribute from `yearOfBirth` and cast it to number.
+ *      - cast `isRetired` to true if its string value equals to "true", and false otherwise.
+ */
+
+const template = ['players/player', {
+    name: 'title-case(name)',
+    jerseyNumber: '@jerseyNumber',
+    yearOfBirth: 'number(yearOfBirth)',
+    isRetired: 'boolean(isRetired = "true")'
+}]
 
 ;(async function () {
-    await ready()
     const result = await transform(xml, template)
     console.log(result)
 
     const prettyStr = await prettyPrint(xml, { indentSize: 4})
     console.log(prettyStr)
 })()
+```
 
+Output of `transform()`
 
+```
+[
+    {
+        name: 'Wayne Rooney',
+        jerseyNumber: 10,
+        yearOfBirth: 1985,
+        isRetired: false,
+    },
+    {
+        name: 'Cristiano Ronaldo',
+        jerseyNumber: 7,
+        yearOfBirth: 1985,
+        isRetired: false,
+    },
+    {
+        name: 'Eric Cantona',
+        jerseyNumber: 7,
+        yearOfBirth: 1966,
+        isRetired: true,
+    }
+]
+```
+
+And output of `prettyPrint()`
+
+```
+<players>
+    <player jerseyNumber="10">
+        <name>Wayne Rooney</name>
+        <isRetired>false</isRetired>
+        <yearOfBirth>1985</yearOfBirth>
+    </player>
+    <player jerseyNumber="7">
+        <name>Cristiano Ronaldo</name>
+        <isRetired>false</isRetired>
+        <yearOfBirth>1985</yearOfBirth>
+    </player>
+    <player jerseyNumber="7">
+        <name>Eric Cantona</name>
+        <isRetired>true</isRetired>
+        <yearOfBirth>1966</yearOfBirth>
+    </player>
+</players>
 ```
 
 ## Licence

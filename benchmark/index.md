@@ -2,27 +2,39 @@
 
 Never mind about the actual number. You can check the percentage differences between package for reference.
 
-Benchmark ran on AMZ Ryzen 3800X.
+Benchmark ran on Macbook 16".
 
 ## transform()
 
 `node benchmark/transform`
 
 ```
-camaro x 362 ops/sec ±0.31% (87 runs sampled)
-rapidx2j x 226 ops/sec ±0.27% (88 runs sampled)
-xml2json x 46.32 ops/sec ±1.39% (61 runs sampled)
-xml2js x 50.51 ops/sec ±7.22% (68 runs sampled)
-fast-xml-parser x 256 ops/sec ±0.63% (86 runs sampled)
-xml-js x 45.05 ops/sec ±6.19% (61 runs sampled)
+camaro v6: 1,395.6 ops/sec
+fast-xml-parser: 153 ops/sec
+xml2js: 47.6 ops/sec
+xml-js: 51 ops/sec
 ```
+
+I have included the test for various XML file sizes: 300KB/ 100KB / 60KB and 7KB. As you can see `camaro` is not very good with small XML file. However, it excels with big XML file.
+
+The tested XML files are included in `benchmarks/fixtures` folder.
+
+300 KB XML file            |  100 KB XML file
+:-------------------------:|:-------------------------:
+![](fixtures/300kb.png)    |  ![](fixtures/100kb.png)
+
+60 KB XML file             |  7 KB XML file
+:-------------------------:|:-------------------------:
+![](fixtures/60kb.png)     |  ![](fixtures/7kb.png)
 
 ## prettyPrint()
 
 `node benchmark/pretty-print`
 
+`camaro` loses big time here.
+
 ```
-camaro x 274,438 ops/sec ±0.56% (87 runs sampled)
-pretty-data x 155,168 ops/sec ±0.82% (94 runs sampled)
-prettify-xml x 244,450 ops/sec ±0.28% (94 runs sampled)
+camaro v6: 62,363.2 ops/sec
+pretty-data: 141,257.8 ops/sec
+prettifyXml: 258,408 ops/sec
 ```

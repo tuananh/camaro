@@ -26,7 +26,7 @@
 ### Example 1
 
 ```js
-const { ready, transform } = require('camaro')
+const { transform } = require('camaro')
 
 ;(async function() {
     const template = {
@@ -35,7 +35,6 @@ const { ready, transform } = require('camaro')
             value: 'value'
         }]
     }
-    await ready()
     const result = await transform(xml, template)
     console.log(JSON.stringify(result, null, 2))
 })()
@@ -71,13 +70,12 @@ Output:
 Getting just names only as array of name string
 
 ```js
-const { ready, transform } = require('camaro')
+const { transform } = require('camaro')
 
 ;(async function() {
     const template = {
         names: ['/root/items/item', 'name']
     }
-    await ready()
     const result = await transform(xml, template)
     console.log(JSON.stringify(result, null, 2))
 })()

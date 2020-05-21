@@ -1,27 +1,64 @@
-const benchmark = require('benchmark')
 const fs = require('fs')
-const { prettyPrint } = require('../')
-const { pd } = require('pretty-data')
+const { prettyPrint } = require('..')
+const prettyData = require('pretty-data')
 const prettifyXml = require('prettify-xml')
 
-const suite = new benchmark.Suite()
-const xml = fs.readFileSync('examples/simple.xml', 'utf-8')
+/**
+ *
+ * @param {object} param0
+ * @param {string} param0.name name of the benchmark
+ * @param {function} param0.fn function to benchmark
+ * @param {number} param0.duration duration in millisecond
+ */
+async function bench({ name = '', fn, duration = 5000, async = false } = {}) {
+    const start = process.hrtime.bigint()
+    let done = 0
 
-suite.add('camaro', function(deferred) {
-    prettyPrint(xml).then(_ => deferred.resolve())
-}, { defer: true })
+    if (async) {
+        let results = []
 
-suite.add('pretty-data', function () {
-    pd.xml(xml)
-})
+        while ((process.hrtime.bigint() - start) / 1_000_000n < duration) {
+            results.push(scheduleTasks())
+        }
 
-suite.add('prettify-xml', function () {
-    prettifyXml(xml)
-})
+        async function scheduleTasks() {
+            while ((process.hrtime.bigint() - start) / 1_000_000n < duration) {
+                await fn()
+                done++
+            }
+        }
 
-suite.on('cycle', cycle)
-suite.run()
+        await Promise.all(results)
+    } else {
+        while ((process.hrtime.bigint() - start) / 1_000_000n < duration) {
+            fn()
+            done++
+        }
+    }
 
-function cycle(e) {
-    console.log(e.target.toString())
+    const opsPerSecond = done / duration * 1e3;
+    console.log(`${name}: %s ops/sec`, opsPerSecond.toLocaleString())
+
+    return {
+        name,
+        duration,
+        opsPerSecond
+    }
 }
+
+const xml = fs.readFileSync(__dirname + '/../examples/simple.xml', 'utf-8')
+
+async function runBenchmarks() {
+    await bench({
+        name: 'camaro v6',
+        fn: () => prettyPrint(xml),
+        async: true,
+    })
+
+    await bench({name: 'pretty-data', fn: () => prettyData.pd.xml(xml) })
+
+    await bench({name: 'prettifyXml', fn: () => prettifyXml(xml) })
+
+}
+
+runBenchmarks()

@@ -1,4 +1,4 @@
-# 4.0.2 API Reference
+# 6.0.0 API Reference
 
 - [camaro](#camaro)
   - [`transform(xml, template)`](#transformxml-template)
@@ -6,10 +6,6 @@
   - [`prettyPrint(xml)`](#prettyprintxml)
 
 ## camaro
-
-### `ready()`
-
-Initialize module. Needed to be called once before calling other methods.
 
 ### `transform(xml, template)`
 

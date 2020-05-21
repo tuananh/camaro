@@ -1,5 +1,5 @@
 const t = require('tape')
-const { ready, transform } = require('../')
+const { transform } = require('../')
 
 const xml = `
     <element>
@@ -30,7 +30,7 @@ t.test('array-in-array test .// should only match nodes inside current node', as
             items: ['.//item', '.']
         }]
     }
-    await ready()
+    
     const result = await transform(xml, template)
 
     t.equal(result.elements[0].items.length, 3, 'elements[0].items should have only 3 elements')

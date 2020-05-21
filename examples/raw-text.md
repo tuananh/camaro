@@ -3,7 +3,7 @@
 Related issue: [#82](https://github.com/tuananh/camaro/issues/82)
 
 ```js
-const { ready, transform } = require('camaro')
+const { transform } = require('camaro')
 
 const xml = `
     <items>
@@ -18,7 +18,6 @@ const template = {
 }
 
 ;(async function main() {
-    await ready()
     const output = await transform(xml, template)
     console.log(JSON.stringify(output, null, 4))
 })();

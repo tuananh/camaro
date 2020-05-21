@@ -1,0 +1,108 @@
+<HotelListResponse xmlns:ns2="http://v3.hotel.wsapi.ean.com/">
+    <customerSessionId>yuvb3jdpifp2t13y43pass2p</customerSessionId>
+    <numberOfRoomsRequested>1</numberOfRoomsRequested>
+    <moreResultsAvailable>false</moreResultsAvailable>
+    <cacheKey>-48a4e19f:15bec159775:50eb</cacheKey>
+    <cacheLocation>10.186.170.98:7300</cacheLocation>
+    <cachedSupplierResponse supplierCacheTolerance="NOT_SUPPORTED" cachedTime="0" supplierRequestNum="98" supplierResponseNum="93" supplierResponseTime="1629" candidatePreptime="28" otherOverheadTime="11" tpidUsed="5220" matchedCurrency="true" matchedLocale="true" />
+    <HotelList size="2" activePropertyCount="98">
+        <HotelSummary order="0" ubsScore="0">
+            <hotelId>139396</hotelId>
+            <name>Hilton Petaling Jaya</name>
+            <address1>No 2 Jalan Barat</address1>
+            <city>Petaling Jaya</city>
+            <postalCode>46200</postalCode>
+            <countryCode>MY</countryCode>
+            <airportCode>KUL</airportCode>
+            <supplierType>E</supplierType>
+            <propertyCategory>1</propertyCategory>
+            <hotelRating>5.0</hotelRating>
+            <hotelRatingDisplay>Star</hotelRatingDisplay>
+            <confidenceRating>52</confidenceRating>
+            <amenityMask>1200642</amenityMask>
+            <locationDescription></locationDescription>
+            <shortDescription> </shortDescription>
+            <highRate>85.36</highRate>
+            <lowRate>40.53</lowRate>
+            <rateCurrencyCode>USD</rateCurrencyCode>
+            <latitude>3.10215</latitude>
+            <longitude>101.64044</longitude>
+            <proximityDistance>-1.0</proximityDistance>
+            <proximityUnit>MI</proximityUnit>
+            <hotelInDestination>false</hotelInDestination>
+            <thumbNailUrl>/hotels/1000000/20000/15100/15036/b07df6e7_t.jpg</thumbNailUrl>
+            <deepLink>http://www.travelnow.com/templates/500379/hotels/139396/overview?lang=en&amp;amp;currency=USD&amp;amp;standardCheckin=9/24/2017&amp;amp;standardCheckout=9/25/2017&amp;amp;roomsCount=1&amp;amp;rooms[0].adultsCount=2</deepLink>
+            <RoomRateDetailsList>
+                <RoomRateDetails>
+                    <roomTypeCode>200224681</roomTypeCode>
+                    <rateCode>201272789</rateCode>
+                    <maxRoomOccupancy>3</maxRoomOccupancy>
+                    <quotedRoomOccupancy>2</quotedRoomOccupancy>
+                    <minGuestAge>2</minGuestAge>
+                    <roomDescription>Room</roomDescription>
+                    <propertyAvailable>true</propertyAvailable>
+                    <propertyRestricted>false</propertyRestricted>
+                    <expediaPropertyId>15036</expediaPropertyId>
+                    <RateInfos size="1">
+                        <RateInfo priceBreakdown="true" promo="true" rateChange="false" pkgSavingsPercent="54.2" pkgSavingsAmount="56.76">
+                            <RoomGroup>
+                                <Room>
+                                    <numberOfAdults>2</numberOfAdults>
+                                    <numberOfChildren>0</numberOfChildren>
+                                    <rateKey>2bf05628-5eff-45d7-bbee-32bfb355963a-5220</rateKey>
+                                    <ChargeableNightlyRates>
+                                        <NightlyRate baseRate="85.36" rate="40.53" promo="true" fenced="false" />
+                                    </ChargeableNightlyRates>
+                                </Room>
+                            </RoomGroup>
+                            <ChargeableRateInfo averageBaseRate="85.36" averageRate="40.53" commissionableUsdTotal="40.53" currencyCode="USD" maxNightlyRate="40.53" nightlyRateTotal="40.53" grossProfitOffline="0.00" grossProfitOnline="1.90" surchargeTotal="7.26" total="47.79">
+                                <NightlyRatesPerRoom size="1">
+                                    <NightlyRate baseRate="85.36" rate="40.53" promo="true" fenced="false" />
+                                </NightlyRatesPerRoom>
+                                <Surcharges size="1">
+                                    <Surcharge type="TaxAndServiceFee" amount="7.26" />
+                                </Surcharges>
+                            </ChargeableRateInfo>
+                            <cancellationPolicy>We understand that sometimes your travel plans change. We do not charge a change or cancel fee. However, this property (Hilton Petaling Jaya) imposes the following penalty to its customers that we are required to pass on: Cancellations or changes made after 2:00 PM ((GMT+08:00) Kuala Lumpur, Singapore) on Sep 23, 2017, or no-shows, are subject to a 1 Night Room &amp;amp; Tax penalty. </cancellationPolicy>
+                            <CancelPolicyInfoList>
+                                <CancelPolicyInfo>
+                                    <versionId>334772524</versionId>
+                                    <cancelTime>14:00:00</cancelTime>
+                                    <startWindowHours>0</startWindowHours>
+                                    <nightCount>1</nightCount>
+                                    <currencyCode>USD</currencyCode>
+                                    <timeZoneDescription>(GMT+08:00) Kuala Lumpur, Singapore</timeZoneDescription>
+                                </CancelPolicyInfo>
+                                <CancelPolicyInfo>
+                                    <versionId>334772525</versionId>
+                                    <cancelTime>14:00:00</cancelTime>
+                                    <startWindowHours>24</startWindowHours>
+                                    <nightCount>0</nightCount>
+                                    <currencyCode>USD</currencyCode>
+                                    <timeZoneDescription>(GMT+08:00) Kuala Lumpur, Singapore</timeZoneDescription>
+                                </CancelPolicyInfo>
+                            </CancelPolicyInfoList>
+                            <nonRefundable>false</nonRefundable>
+                            <rateType>MerchantStandard</rateType>
+                            <promoId>219881514</promoId>
+                            <promoDescription>Sale!</promoDescription>
+                            <promoType>Standard</promoType>
+                            <currentAllotment>0</currentAllotment>
+                        </RateInfo>
+                    </RateInfos>
+                    <ValueAdds size="1">
+                        <ValueAdd id="2205">
+                            <description>Breakfast Buffet</description>
+                        </ValueAdd>
+                    </ValueAdds>
+                    <BedTypes size="1">
+                        <BedType id="14">
+                            <description>1 king bed</description>
+                        </BedType>
+                    </BedTypes>
+                    <smokingPreferences>NS,E</smokingPreferences>
+                </RoomRateDetails>
+            </RoomRateDetailsList>
+        </HotelSummary>
+    </HotelList>
+</HotelListResponse>

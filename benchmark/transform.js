@@ -1,73 +1,82 @@
-const benchmark = require('benchmark')
 const fs = require('fs')
 const { transform } = require('..')
-const x2j = require('rapidx2j')
-const xml2json = require('xml2json')
-const xml2js = require('xml2js').parseString
 const fastXmlParser = require('fast-xml-parser')
+const xml2js = require('xml2js')
 const xmljs = require('xml-js')
-// const libxmljs = require('libxmljs')
 
-const suite = new benchmark.Suite()
-const xml = fs.readFileSync('examples/ean.xml', 'utf-8')
+/**
+ *
+ * @param {object} param0
+ * @param {string} param0.name name of the benchmark
+ * @param {function} param0.fn function to benchmark
+ * @param {number} param0.iterations number of iterations
+ */
+async function bench({ name = '', fn, iterations = 10000, async = false } = {}) {
+    const start = process.hrtime.bigint()
 
-suite.add('camaro', function(deferred) {
-    const template = {
-        cache_key: '/HotelListResponse/cacheKey',
-        hotels: [
-            '//HotelSummary',
-            {
-                hotel_id: 'hotelId',
-                name: 'name',
-                rooms: [
-                    'RoomRateDetailsList/RoomRateDetails',
-                    {
-                        rates: [
-                            'RateInfos/RateInfo',
-                            {
-                                currency: 'ChargeableRateInfo/@currencyCode',
-                                non_refundable: 'nonRefundable',
-                                price: 'ChargeableRateInfo/@total'
-                            }
-                        ],
-                        room_name: 'roomDescription',
-                        room_type_id: 'roomTypeCode'
-                    }
-                ]
-            }
-        ],
-        session_id: '/HotelListResponse/customerSessionId'
+    if (async) {
+        let results = []
+        for (let i = 0; i < iterations; i++) {
+            results.push(fn())
+        }
+        await Promise.all(results)
+    } else {
+        for (let i = 0; i < iterations; i++) {
+            fn()
+        }
     }
-    transform(xml, template).then(_ => deferred.resolve())
-}, { defer: true })
+    const duration = Number((process.hrtime.bigint() - start) / 1_000_000n)
+    const opsPerSecond = iterations / duration * 1e3;
+    console.log(`${name}: %s ops/sec`, opsPerSecond.toFixed(0))
 
-suite.add('rapidx2j', function() {
-    x2j.parse(xml)
-})
-
-suite.add('xml2json', function() {
-    xml2json.toJson(xml)
-})
-
-suite.add('xml2js', function() {
-    xml2js(xml, () => {})
-})
-
-suite.add('fast-xml-parser', function() {
-    fastXmlParser.parse(xml)
-})
-
-suite.add('xml-js', function() {
-    xmljs.xml2json(xml, { compact: true, spaces: 2 })
-})
-
-// suite.add('libxmljs', function() {
-//     const xmlDoc = libxmljs.parseXml(xml)
-// })
-
-suite.on('cycle', cycle)
-suite.run()
-
-function cycle(e) {
-    console.log(e.target.toString())
+    return {
+        name,
+        duration,
+        opsPerSecond
+    }
 }
+
+const xml = fs.readFileSync(__dirname + '/./fixtures/100kb.xml', 'utf-8')
+const template = {
+    cache_key: '/HotelListResponse/cacheKey',
+    hotels: [
+        '//HotelSummary',
+        {
+            hotel_id: 'hotelId',
+            name: 'name',
+            rooms: [
+                'RoomRateDetailsList/RoomRateDetails',
+                {
+                    rates: [
+                        'RateInfos/RateInfo',
+                        {
+                            currency: 'ChargeableRateInfo/@currencyCode',
+                            non_refundable: 'boolean(nonRefundable = "true")',
+                            price: 'number(ChargeableRateInfo/@total)',
+                        },
+                    ],
+                    room_name: 'roomDescription',
+                    room_type_id: 'roomTypeCode',
+                },
+            ],
+        },
+    ],
+    session_id: '/HotelListResponse/customerSessionId',
+}
+
+async function runBenchmarks() {
+    await bench({
+        name: 'camaro v6',
+        fn: () => transform(xml, template),
+        async: true,
+    })
+
+    await bench({name: 'fast-xml-parser', fn: () => fastXmlParser.parse(xml)})
+
+    await bench({name: 'xml2js', fn: () => xml2js.parseString(xml) })
+
+    await bench({name: 'xml-js', fn: () => xmljs.xml2js(xml) })
+
+}
+
+runBenchmarks()
