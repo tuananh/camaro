@@ -31,13 +31,6 @@
 
 ## 🔥 Benchmark
 
-```
-camaro v6: 1,395.6 ops/sec
-fast-xml-parser: 153 ops/sec
-xml2js: 47.6 ops/sec
-xml-js: 51 ops/sec
-```
-
 300 KB XML file                      |  100 KB XML file
 :-----------------------------------:|:-------------------------:
 ![](benchmark/fixtures/300kb.png)    |  ![](benchmark/fixtures/100kb.png)
