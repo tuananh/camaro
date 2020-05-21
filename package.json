@@ -27,6 +27,7 @@
   "files": [
     "index.js",
     "index.mjs",
+    "worker.js",
     "dist/camaro.js",
     "dist/camaro.wasm",
     "index.d.ts"
