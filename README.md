@@ -172,6 +172,10 @@ And output of `prettyPrint()`
 </players>
 ```
 
+## Similar projects
+
+- [cruftless](https://github.com/wspringer/cruftless): I personally find this project very fascinating. Its template engine is more powerful than camaro's XPath-based perhaps. You should check it out.
+
 ## Licence
 
 [The MIT License](LICENSE)
