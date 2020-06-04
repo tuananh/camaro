@@ -6,6 +6,9 @@
   "bugs": "https://github.com/tuananh/camaro/issues",
   "main": "index.js",
   "typings": "index.d.ts",
+  "engines": {
+    "node": ">= 12.0.0"
+  },
   "scripts": {
     "test": "tape test/*.test.js",
     "bench": "node benchmark/transform.js",
