@@ -15,6 +15,7 @@
 * Transform XML to JSON.
     * Only take properties that you're interested in.
     * Output is a ready to use JS object.
+    * For those that need a complete document parser, checkout my other project [@tuananh/sax-parser](https://github.com/tuananh/sax-parser) - a pretty fast native module, XML-compliant SAX parser for Node.js.
 
 * Written in C++ and compiled down to WebAssembly so no re-compilation needed.
     * No need to build binary whenever a new Node version released.
@@ -171,6 +172,10 @@ And output of `prettyPrint()`
     </player>
 </players>
 ```
+
+## Similar projects
+
+- [cruftless](https://github.com/wspringer/cruftless): I personally find this project very fascinating. Its template engine is more powerful than camaro's XPath-based perhaps. You should check it out.
 
 ## Licence
 
