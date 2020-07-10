@@ -58,11 +58,11 @@
     "cache": false
   },
   "devDependencies": {
-    "gen-esm-wrapper": "^1.0.4",
+    "gen-esm-wrapper": "^1.0.6",
     "napa": "^3.0.0",
-    "tape": "^5.0.0"
+    "tape": "^5.0.1"
   },
   "dependencies": {
-    "piscina": "^1.4.0"
+    "piscina": "^1.6.3"
   }
 }
