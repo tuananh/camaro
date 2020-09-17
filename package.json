@@ -58,7 +58,7 @@
     "cache": false
   },
   "devDependencies": {
-    "gen-esm-wrapper": "^1.0.6",
+    "gen-esm-wrapper": "^1.1.0",
     "napa": "^3.0.0",
     "tape": "^5.0.1"
   },
