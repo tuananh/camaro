@@ -2,13 +2,13 @@
 
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
 
-[![npm](https://badgen.net/npm/v/camaro)](https://npm.im/camaro)
-![npm bundle size](https://badgen.net/packagephobia/publish/camaro)
+[![npm](https://staging.webadge.dev/npm/v/camaro)](https://npm.im/camaro)
+![npm bundle size](https://staging.webadge.dev/packagephobia/publish/camaro)
 [![Build Status](https://dev.azure.com/me0499/camaro/_apis/build/status/tuananh.camaro?branchName=develop)](https://dev.azure.com/me0499/camaro/_build/latest?definitionId=1&branchName=develop)
-[![Travis](https://badgen.net/travis/tuananh/camaro/master)](https://travis-ci.org/tuananh/camaro)
-[![AppVeyor](https://badgen.net/appveyor/ci/tuananh/camaro/master)](https://ci.appveyor.com/project/tuananh/camaro)
-[![TypeScript definitions on DefinitelyTyped](https://badgen.net/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
-[![npm](https://badgen.net/npm/dt/camaro)](https://npm.im/camaro)
+[![Travis](https://staging.webadge.dev/travis/tuananh/camaro/master)](https://travis-ci.org/tuananh/camaro)
+[![AppVeyor](https://staging.webadge.dev/appveyor/tuananh/camaro/master)](https://ci.appveyor.com/project/tuananh/camaro)
+[![TypeScript definitions on DefinitelyTyped](https://staging.webadge.dev/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
+[![npm](https://staging.webadge.dev/npm/dt/camaro)](https://npm.im/camaro)
 
 ## 🤘 Features
 
