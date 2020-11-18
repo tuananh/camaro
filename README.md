@@ -177,6 +177,16 @@ And output of `prettyPrint()`
 
 - [cruftless](https://github.com/wspringer/cruftless): I personally find this project very fascinating. Its template engine is more powerful than camaro's XPath-based perhaps. You should check it out.
 
+## Used by
+
+- https://github.com/dsifford/academic-bloggers-toolkit
+- https://github.com/hexojs/hexo-generator-sitemap
+- https://github.com/hexojs/hexo-generator-feed
+- https://github.com/hexojs/hexo-migrator-wordpress
+- https://github.com/fengkx/NodeRSSBot
+
+...
+
 ## Licence
 
 [The MIT License](LICENSE)
