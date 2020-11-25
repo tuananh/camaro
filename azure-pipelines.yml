@@ -13,6 +13,8 @@ jobs:
           node_version: 13.x
         node_14_x:
           node_version: 14.x
+        node_15_x:
+          node_version: 15.x
     steps:
       - template: azure-test.yml
 
@@ -31,6 +33,8 @@ jobs:
           node_version: 13.x
         node_14_x:
           node_version: 14.x
+        node_15_x:
+          node_version: 15.x
 
     steps:
       - template: azure-test.yml
@@ -50,6 +54,8 @@ jobs:
           node_version: 13.x
         node_14_x:
           node_version: 14.x
+        node_15_x:
+          node_version: 15.x
 
     steps:
       - template: azure-test.yml
