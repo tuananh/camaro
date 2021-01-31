@@ -2,13 +2,11 @@
 
 > camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
 
-[![npm](https://badgen.net/npm/v/camaro)](https://npm.im/camaro)
-![npm bundle size](https://badgen.net/packagephobia/publish/camaro)
-[![Build Status](https://dev.azure.com/me0499/camaro/_apis/build/status/tuananh.camaro?branchName=develop)](https://dev.azure.com/me0499/camaro/_build/latest?definitionId=1&branchName=develop)
-[![Travis](https://badgen.net/travis/tuananh/camaro/master)](https://travis-ci.org/tuananh/camaro)
-[![AppVeyor](https://badgen.net/appveyor/ci/tuananh/camaro/master)](https://ci.appveyor.com/project/tuananh/camaro)
-[![TypeScript definitions on DefinitelyTyped](https://badgen.net/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
-[![npm](https://badgen.net/npm/dt/camaro)](https://npm.im/camaro)
+[![npm](https://webadge.dev/npm/v/camaro)](https://npm.im/camaro)
+![npm bundle size](https://webadge.dev/packagephobia/publish/camaro)
+![Build status](https://github.com/tuananh/camaro/workflows/CI/badge.svg)
+[![TypeScript definitions on DefinitelyTyped](https://webadge.dev/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
+[![npm](https://webadge.dev/npm/dt/camaro)](https://npm.im/camaro)
 
 ## 🤘 Features
 
@@ -176,6 +174,16 @@ And output of `prettyPrint()`
 ## Similar projects
 
 - [cruftless](https://github.com/wspringer/cruftless): I personally find this project very fascinating. Its template engine is more powerful than camaro's XPath-based perhaps. You should check it out.
+
+## Used by
+
+- https://github.com/dsifford/academic-bloggers-toolkit
+- https://github.com/hexojs/hexo-generator-sitemap
+- https://github.com/hexojs/hexo-generator-feed
+- https://github.com/hexojs/hexo-migrator-wordpress
+- https://github.com/fengkx/NodeRSSBot
+
+...
 
 ## Licence
 
