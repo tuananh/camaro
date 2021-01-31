@@ -4,9 +4,7 @@
 
 [![npm](https://webadge.dev/npm/v/camaro)](https://npm.im/camaro)
 ![npm bundle size](https://webadge.dev/packagephobia/publish/camaro)
-[![Build Status](https://dev.azure.com/me0499/camaro/_apis/build/status/tuananh.camaro?branchName=develop)](https://dev.azure.com/me0499/camaro/_build/latest?definitionId=1&branchName=develop)
-[![Travis](https://webadge.dev/travis/tuananh/camaro/master)](https://travis-ci.org/tuananh/camaro)
-[![AppVeyor](https://webadge.dev/appveyor/tuananh/camaro/master)](https://ci.appveyor.com/project/tuananh/camaro)
+![Build status](https://github.com/tuananh/camaro/workflows/CI/badge.svg)
 [![TypeScript definitions on DefinitelyTyped](https://webadge.dev/badge/DefinitelyTyped/.d.ts)](http://definitelytyped.org)
 [![npm](https://webadge.dev/npm/dt/camaro)](https://npm.im/camaro)
 
