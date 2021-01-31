@@ -1,18 +1,16 @@
 const { resolve } = require('path')
-
+const NODE_MAJOR_VERSION = process.versions.node.split('.')[0]
 let pool = null
-try {
-    const WorkerPool = require('piscina')
-    pool = new WorkerPool({ filename: resolve(__dirname, 'worker.js') })
-} catch(e) {
-    if (e.code === 'MODULE_NOT_FOUND') {
-        console.warn('[camaro] worker_threads is not available, expect performance drop. Try using Node version >= 12.')
-    }
-    
+
+if (NODE_MAJOR_VERSION < 12) {
+    console.warn('[camaro] worker_threads is not available, expect performance drop. Try using Node version >= 12.')
     const workerFn = require('./worker')
     pool = {
         runTask: async (args) => workerFn(args)
     }
+} else {
+    const WorkerPool = require('piscina')
+    pool = new WorkerPool({ filename: resolve(__dirname, 'worker.js') })
 }
 
 function isNonEmptyString(str) {
