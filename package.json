@@ -63,6 +63,6 @@
     "tape": "^5.0.1"
   },
   "dependencies": {
-    "piscina": "^1.6.3"
+    "piscina": "^2.1.0"
   }
 }
