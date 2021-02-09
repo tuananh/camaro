@@ -2,8 +2,6 @@
 
 Never mind about the actual number. You can check the percentage differences between package for reference.
 
-Benchmark ran on Macbook 16".
-
 ## transform()
 
 `node benchmark/transform`
