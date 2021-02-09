@@ -41,7 +41,7 @@ async function bench({ name = '', fn, iterations = 10000, async = false } = {}) 
     }
 }
 
-const xml = fs.readFileSync(__dirname + '/./fixtures/100kb.xml', 'utf-8')
+const xml = fs.readFileSync(__dirname + '/./fixtures/300kb.xml', 'utf-8')
 const template = {
     cache_key: '/HotelListResponse/cacheKey',
     hotels: [
@@ -76,9 +76,9 @@ async function runBenchmarks() {
         async: true,
     })
 
-    await bench({name: 'fast-xml-parser worker', async: true, fn: async () => fxpWorkerPool.runTask(xml)});
-
     await bench({name: 'txml worker', async: true, fn: async () => txmlWorkerPool.runTask(xml) });
+
+    await bench({name: 'fast-xml-parser worker', async: true, fn: async () => fxpWorkerPool.runTask(xml)});
 
     await bench({name: 'fast-xml-parser', fn: () => fastXmlParser.parse(xml)})
 
