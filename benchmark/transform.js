@@ -1,8 +1,13 @@
 const fs = require('fs')
+const { resolve } = require('path')
 const { transform } = require('..')
 const fastXmlParser = require('fast-xml-parser')
 const xml2js = require('xml2js')
 const xmljs = require('xml-js')
+const WorkerPool = require('piscina')
+
+const txmlWorkerPool = new WorkerPool({ filename: resolve(__dirname, 'workers/txml.js') });
+const fxpWorkerPool = new WorkerPool({ filename: resolve(__dirname, 'workers/fast-xml-parser.js') });
 
 /**
  *
@@ -67,9 +72,13 @@ const template = {
 async function runBenchmarks() {
     await bench({
         name: 'camaro v6',
-        fn: () => transform(xml, template),
+        fn: async () => transform(xml, template),
         async: true,
     })
+
+    await bench({name: 'fast-xml-parser worker', async: true, fn: async () => fxpWorkerPool.runTask(xml)});
+
+    await bench({name: 'txml worker', async: true, fn: async () => txmlWorkerPool.runTask(xml) });
 
     await bench({name: 'fast-xml-parser', fn: () => fastXmlParser.parse(xml)})
 
