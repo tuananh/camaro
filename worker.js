@@ -9,12 +9,11 @@ function callWasmBinding(methodName, ...args) {
 
 const ready = new Promise((resolve, reject) => {
     if (!cachedInstance) {
-        const instance = Module()
-        instance.onRuntimeInitialized = () => {
+        Module().then((instance) => {
             cachedInstance = instance
             resolve()
-        }
-    } else {            
+        })
+    } else {        
         resolve()
     }
 })
