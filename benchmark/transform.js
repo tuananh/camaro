@@ -1,10 +1,11 @@
 const fs = require('fs')
 const { resolve } = require('path')
 const { transform } = require('..')
-const fastXmlParser = require('fast-xml-parser')
+const { XMLParser } = require('fast-xml-parser')
 const xml2js = require('xml2js')
 const xmljs = require('xml-js')
 const WorkerPool = require('piscina')
+const fastXmlParser = new XMLParser()
 
 const txmlWorkerPool = new WorkerPool({ filename: resolve(__dirname, 'workers/txml.js') });
 const fxpWorkerPool = new WorkerPool({ filename: resolve(__dirname, 'workers/fast-xml-parser.js') });
@@ -76,9 +77,9 @@ async function runBenchmarks() {
         async: true,
     })
 
-    await bench({name: 'txml worker', async: true, fn: async () => txmlWorkerPool.runTask(xml) });
+    await bench({name: 'txml worker', async: true, fn: async () => txmlWorkerPool.run(xml) });
 
-    await bench({name: 'fast-xml-parser worker', async: true, fn: async () => fxpWorkerPool.runTask(xml)});
+    await bench({name: 'fast-xml-parser worker', async: true, fn: async () => fxpWorkerPool.run(xml)});
 
     await bench({name: 'fast-xml-parser', fn: () => fastXmlParser.parse(xml)})
 

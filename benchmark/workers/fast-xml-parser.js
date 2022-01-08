@@ -1,5 +1,6 @@
-const fastXmlParser = require('fast-xml-parser');
+const { XMLParser } = require('fast-xml-parser');
+const parser = new XMLParser();
 
 module.exports = (xml) => {
-    return fastXmlParser.parse(xml);
+    return parser.parse(xml);
 }
