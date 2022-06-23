@@ -184,6 +184,10 @@ And output of `prettyPrint()`
 
 ...
 
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/tuananh/camaro.svg)](https://starchart.cc/tuananh/camaro)
+
 ## Licence
 
 [The MIT License](LICENSE)
