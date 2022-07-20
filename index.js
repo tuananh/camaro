@@ -6,7 +6,7 @@ if (NODE_MAJOR_VERSION < 12) {
     console.warn('[camaro] worker_threads is not available, expect performance drop. Try using Node version >= 12.')
     const workerFn = require('./worker')
     pool = {
-        runTask: async (args) => workerFn(args)
+        run: async (args) => workerFn(args)
     }
 } else {
     const WorkerPool = require('piscina')
@@ -36,7 +36,7 @@ function transform(xml, template) {
         throw new TypeError('2nd argument (template) must be an object')
     }
 
-    return pool.runTask({
+    return pool.run({
         fn: 'transform',
         args: [xml, JSON.stringify(template)],
     })
@@ -53,7 +53,7 @@ function toJson(xml) {
     //     throw new TypeError('expecting xml input to be non-empty string')
     // }
 
-    // return pool.runTask({ fn: 'toJson', args: [xml] })
+    // return pool.run({ fn: 'toJson', args: [xml] })
 }
 
 /**
@@ -68,7 +68,7 @@ function prettyPrint(xml, opts = { indentSize: 2 }) {
         throw new TypeError('expecting xml input to be non-empty string')
     }
 
-    return pool.runTask({ fn: 'prettyPrint', args: [xml, opts] })
+    return pool.run({ fn: 'prettyPrint', args: [xml, opts] })
 }
 
 module.exports = { transform, toJson, prettyPrint }
