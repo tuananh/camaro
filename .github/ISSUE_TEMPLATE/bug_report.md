@@ -14,7 +14,7 @@ A clear and concise description of what the bug is.
 
 ```
 const { transform } = require('camaro')
-// your code
+// your code here
 ```
 
 **Expected behavior**
@@ -23,6 +23,6 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-- camaro versio: 
+- camaro version: 
 - Node version: 
 - Operating system:
