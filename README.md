@@ -1,6 +1,6 @@
 # camaro
 
-> camaro is an utility to transform XML to JSON, using Node.js binding to native XML parser [pugixml](http://pugixml.org/), one of the fastest XML parser around.
+> camaro is a utility to transform XML to JSON, using Node.js bindings to a native XML parser [pugixml](http://pugixml.org/) - one of the fastest XML parsers around.
 
 [![npm](https://raster.shields.io/npm/v/camaro)](https://npm.im/camaro)
 ![Build status](https://github.com/tuananh/camaro/workflows/CI/badge.svg)
@@ -11,17 +11,17 @@
 
 * Transform XML to JSON.
     * Only take properties that you're interested in.
-    * Output is a ready to use JS object.
+    * Output is ready to use JS object.
     * For those that need a complete document parser, checkout my other project [@tuananh/sax-parser](https://github.com/tuananh/sax-parser) - a pretty fast native module, XML-compliant SAX parser for Node.js.
 
-* Written in C++ and compiled down to WebAssembly so no re-compilation needed.
-    * No need to build binary whenever a new Node version released.
-    * Work on all major platforms (OS X, Linux and Windows). See Travis CI and AppVeyor build status for details.
+* Written in C++ and compiled down to WebAssembly, so no re-compilation needed.
+    * No need to build a binary whenever a new Node version is released.
+    * Works on all major platforms (OS X, Linux and Windows). See Travis CI and AppVeyor build status for details.
     * AWS Lambda friendly (or serverless in general).
 
 * It's pretty fast on large XML strings.
-    * We're using [pugixml](http://pugixml.org/) underneath. It's one of the fastest XML parser around.
-    * Scale well with multi-core processor by use of `worker_threads` pool (Node >= 12).
+    * We're using [pugixml](http://pugixml.org/) under the hood. It's one of the fastest XML parsers around.
+    * Scales well with multi-core processors by use of a `worker_threads` pool (Node >= 12).
 
 * Pretty print XML.
 
@@ -35,15 +35,15 @@
 :-----------------------------------:|:-------------------------:
 ![](benchmark/fixtures/60kb.png)     |  ![](benchmark/fixtures/7kb.png)
 
-XML file is an actual XML response from Expedia API. I just delete some nodes to change its size for benchmarking.
+The XML file is an actual XML response from the Expedia API. I just deleted some nodes to change its size for benchmarking.
 
 For complete benchmark, see [benchmark/index.md](benchmark/index.md).
 
-* Please note that **this is an unfair game for camaro** because it only transform those fields specified in template.
-The whole reason of me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
+* Please note that **this is an unfair game for camaro** because it only transforms the fields specified in the template.
+The whole reason for me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
 * I may expose another method to transform the whole XML tree so that the benchmark will better reflect the real performance.
-* 🚧 Performance on small XML strings will probably be worse than pure JavaScript implementation. If your use cases consist of small XML strings only, you probably don't need this.
-* Some other libraries that I used to use for benchmark like `rapidx2j` or `xml2json` no longer works on Node 14 so I remove them from the benchmark.
+* 🚧 Performance on small XML strings will probably be worse than pure JavaScript implementations. If your use cases consists of small XML strings only, you probably don't need this.
+* Some other libraries that I used to use for benchmarks, like `rapidx2j` and `xml2json`, no longer work on Node 14, so I removed them from the benchmark.
 
 ![intro](intro.png)
 
@@ -60,9 +60,9 @@ You can use our custom template format powered by [XPath](https://developer.mozi
 
 We also introduce some custom syntax such as:
 
-* if a path start with `#`, that means it's a constant. E.g: `#1234` will return `1234`
+* if a path starts with `#`, that means it's a constant. E.g, `#1234` will return `1234`
 * if a path is empty, return blank
-* Some string manipulation functions which are not availble in XPath 1.0 such as `lower-case`, `upper-case`, `title-case`, `camel-case`, `snake-case`, `string-join` or `raw`. Eventually, I'm hoping to add all XPath 2.0 functions but these are all that I need for now. PRs welcome.
+* Some string manipulation functions which are not availble in XPath 1.0, such as `lower-case`, `upper-case`, `title-case`, `camel-case`, `snake-case`, `string-join` or `raw`. Eventually, I'm hoping to add all XPath 2.0 functions but these are all that I need for now. PRs are welcome.
 
 The rest are pretty much vanilla XPath 1.0.
 
