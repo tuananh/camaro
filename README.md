@@ -37,7 +37,7 @@
 
 The XML file is an actual XML response from the Expedia API. I just deleted some nodes to change its size for benchmarking.
 
-For complete benchmark, see [benchmark/index.md](benchmark/index.md).
+For complete benchmark, see [benchmark/README.md](benchmark/README.md).
 
 * Please note that **this is an unfair game for camaro** because it only transforms the fields specified in the template.
 The whole reason for me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
