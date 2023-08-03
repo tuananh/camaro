@@ -68,7 +68,7 @@ The rest are pretty much vanilla XPath 1.0.
 
 For complete API documentation, please see [API.md](API.md)
 
-Additional examples can be found in the examples folder at https://github.com/tuananh/camaro/tree/develop/examples.
+Additional examples can be found in the examples folder at https://github.com/tuananh/camaro/tree/develop/examples or this comprehensive [blog post](https://mdleom.com/blog/2020/01/20/how-to-use-camaro-xml/) by Ming Di Leom.
 
 ```js
 const { transform, prettyPrint } = require('camaro')
