@@ -13,7 +13,7 @@
         "test": "tape test/*.test.js",
         "bench": "node benchmark/transform.js",
         "install-deps": "napa",
-        "build": "docker run --rm -v $(pwd):/src emscripten/emsdk ./build.sh",
+        "build": "docker run --rm -v $(pwd):/src emscripten/emsdk:3.1.45 ./build.sh",
         "gen-esm": "gen-esm-wrapper . ./index.mjs"
     },
     "exports": {
@@ -50,9 +50,9 @@
     "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
     "license": "MIT",
     "napa": {
-        "pugixml": "tuananh/pugixml#develop",
-        "json": "nlohmann/json#develop",
-        "fifo_map": "nlohmann/fifo_map#master"
+        "pugixml": "tuananh/pugixml#f604f19945a02d2796f74a85b03d542ba7d8b451",
+        "json": "nlohmann/json#v3.11.2",
+        "fifo_map": "nlohmann/fifo_map#d732aaf9a315415ae8fd7eb11e3a4c1f80e42a48"
     },
     "napa-config": {
         "cache": false
