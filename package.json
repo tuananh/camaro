@@ -13,7 +13,7 @@
         "test": "tape test/*.test.js",
         "bench": "node benchmark/transform.js",
         "install-deps": "napa",
-        "build": "docker run --rm -v $(pwd):/src emscripten/emsdk:3.0.0 ./build.sh",
+        "build": "docker run --rm -v $(pwd):/src emscripten/emsdk:3.1.13 ./build.sh",
         "gen-esm": "gen-esm-wrapper . ./index.mjs"
     },
     "exports": {
