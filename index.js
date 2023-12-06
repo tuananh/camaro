@@ -71,4 +71,13 @@ function prettyPrint(xml, opts = { indentSize: 2 }) {
     return pool.run({ fn: 'prettyPrint', args: [xml, opts] })
 }
 
-module.exports = { transform, toJson, prettyPrint }
+/**
+ * destroy the worker pool
+ */
+function destroy() {
+    if (pool && typeof pool.destroy === 'function') {
+        return pool.destroy();
+    }
+}
+
+module.exports = { transform, toJson, prettyPrint, destroy }
