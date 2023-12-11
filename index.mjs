@@ -4,3 +4,4 @@ export default mod;
 export const transform = mod.transform;
 export const toJson = mod.toJson;
 export const prettyPrint = mod.prettyPrint;
+export const destroy = mod.destroy;
