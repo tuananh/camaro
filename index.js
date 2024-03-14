@@ -2,7 +2,7 @@ const { resolve } = require('path')
 const NODE_MAJOR_VERSION = process.versions.node.split('.')[0]
 let pool = null
 
-if (NODE_MAJOR_VERSION < 12) {
+if (NODE_MAJOR_VERSION < 12 || process.env.CAMARO_FORCE_SINGLE_THREAD === 'true') {
     console.warn('[camaro] worker_threads is not available, expect performance drop. Try using Node version >= 12.')
     const workerFn = require('./worker')
     pool = {
@@ -34,7 +34,7 @@ function transform(xml, template) {
 
     if (!template || typeof template !== 'object' || isEmptyObject(template)) {
         throw new TypeError('2nd argument (template) must be an object')
-    }
+    }   
 
     return pool.run({
         fn: 'transform',
