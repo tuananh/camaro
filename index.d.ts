@@ -22,7 +22,7 @@ type Mapped<T> = T extends readonly []
     : Mapped<X>[]
   : never;
 export type Transformed<T extends Record<string, any>> = {
-  readonly [K in keyof T]: Mapped<T[K]>;
+  [K in keyof T]: Mapped<T[K]>;
 };
 
 export function prettyPrint(
