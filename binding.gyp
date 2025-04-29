@@ -13,7 +13,7 @@
       '-fexceptions',
       '-Wall',
       '-mtune=native',
-      '-Ofast',
+      '-O3',
       '-flto'
     ],
     'conditions': [
@@ -44,7 +44,7 @@
         '-fexceptions',
         '-Wall',
         '-mtune=native',
-        '-Ofast'
+        '-O3'
       ],
       'OTHER_LDFLAGS':[
         '-stdlib=libc++'
