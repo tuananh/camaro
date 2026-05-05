@@ -7,14 +7,20 @@ function callWasmBinding(methodName, ...args) {
     return cachedInstance[methodName](...args)
 }
 
-const ready = new Promise((resolve, reject) => {
-    if (!cachedInstance) {
-        Module().then((instance) => {
-            cachedInstance = instance
-            resolve()
-        })
-    } else {        
+// Non-MODULARIZE emscripten exports the Module object; wasm init is async.
+const ready = new Promise((resolve) => {
+    const finish = () => {
+        cachedInstance = Module
         resolve()
+    }
+    if (Module.calledRun) {
+        finish()
+    } else {
+        const prev = Module.onRuntimeInitialized
+        Module.onRuntimeInitialized = function () {
+            if (typeof prev === 'function') prev()
+            finish()
+        }
     }
 })
 
