@@ -13,6 +13,7 @@ cp src/pugiconfig.hpp node_modules/pugixml/src/pugiconfig.hpp
     --bind \
     ${OPTIMIZE} \
     -DNDEBUG \
+    -s 'ALLOW_MEMORY_GROWTH=1' \
     -s 'EXPORT_NAME="pugixml"' \
     -I node_modules/pugixml/src \
     -c node_modules/pugixml/src/pugixml.cpp \
