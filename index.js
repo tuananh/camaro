@@ -48,12 +48,11 @@ function transform(xml, template) {
  * @returns {object} json object converted from the input xml
  */
 function toJson(xml) {
-    throw new Error('Not yet implemented')
-    // if (!isNonEmptyString(xml)) {
-    //     throw new TypeError('expecting xml input to be non-empty string')
-    // }
+    if (!isNonEmptyString(xml)) {
+        throw new TypeError('expecting xml input to be non-empty string')
+    }
 
-    // return pool.run({ fn: 'toJson', args: [xml] })
+    return pool.run({ fn: 'toJson', args: [xml] })
 }
 
 /**

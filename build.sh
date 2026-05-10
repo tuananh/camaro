@@ -13,6 +13,7 @@ cp src/pugiconfig.hpp node_modules/pugixml/src/pugiconfig.hpp
     --bind \
     ${OPTIMIZE} \
     -DNDEBUG \
+    -s 'ALLOW_MEMORY_GROWTH=1' \
     -s 'EXPORT_NAME="pugixml"' \
     -I node_modules/pugixml/src \
     -c node_modules/pugixml/src/pugixml.cpp \
@@ -26,6 +27,7 @@ echo "2/2 Compiling camaro wasm bindings"
     ${OPTIMIZE} \
     -DNDEBUG \
     -s 'MALLOC="emmalloc"' \
+    -s 'ALLOW_MEMORY_GROWTH=1' \
     -I node_modules/pugixml/src \
     -I node_modules/json/single_include/nlohmann \
     -o dist/camaro.js \
