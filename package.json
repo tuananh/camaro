@@ -12,6 +12,7 @@
     "scripts": {
         "test": "tape test/*.test.js",
         "bench": "node benchmark/transform.js",
+        "bench:to-json": "node benchmark/to-json.js",
         "install-deps": "napa",
         "build": "docker run --rm -v $(pwd):/src emscripten/emsdk:5.0.7 ./build.sh",
         "gen-esm": "gen-esm-wrapper . ./index.mjs"
