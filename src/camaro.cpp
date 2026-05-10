@@ -3,7 +3,7 @@
 #include "../node_modules/pugixml/src/pugixml.hpp"
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
-#include <stack>
+#include <vector>
 
 using namespace emscripten;
 using string = std::string;
@@ -192,118 +192,124 @@ val transform(string xml, string json_template) {
   return output;
 }
 
-void traverse(std::stack<pugi::xml_node *> visit_stack, pugi::xml_node xml_node,
-              val output_obj);
+static string trim_xml_text(const char *s) {
+  if (!s)
+    return "";
+  string str(s);
+  const auto start = str.find_first_not_of(" \t\n\r");
+  if (start == string::npos)
+    return "";
+  const auto end = str.find_last_not_of(" \t\n\r");
+  return str.substr(start, end - start + 1);
+}
 
-const char *node_types[] = {"null",  "document", "element", "pcdata",
-                            "cdata", "comment",  "pi",      "declaration"};
+static void merge_child(val parent, const string &key, val child) {
+  val existing = parent[key];
+  if (existing.isUndefined()) {
+    parent.set(key, child);
+    return;
+  }
+  val ArrayCtor = val::global("Array");
+  if (existing.instanceof(ArrayCtor)) {
+    existing.call<void>("push", child);
+  } else {
+    val arr = val::array();
+    arr.call<void>("push", existing);
+    arr.call<void>("push", child);
+    parent.set(key, arr);
+  }
+}
 
-struct simple_walker : pugi::xml_tree_walker {
+static void append_text(val parent, const string &chunk) {
+  if (chunk.empty())
+    return;
+  val cur = parent["_text"];
+  if (cur.isUndefined())
+    parent.set("_text", val(chunk));
+  else
+    parent.set("_text", val(cur.as<string>() + chunk));
+}
+
+static val simplify_value(val v) {
+  val ArrayCtor = val::global("Array");
+  if (v.instanceof(ArrayCtor)) {
+    const int len = v["length"].as<int>();
+    val out = val::array();
+    for (int i = 0; i < len; ++i)
+      out.call<void>("push", simplify_value(v[i]));
+    return out;
+  }
+
+  val ObjectCtor = val::global("Object");
+  if (!v.instanceof(ObjectCtor))
+    return v;
+
+  val keys = ObjectCtor.call<val>("keys", v);
+  const int n = keys["length"].as<int>();
+  val out = val::object();
+  for (int i = 0; i < n; ++i) {
+    const string k = keys[i].as<string>();
+    out.set(k, simplify_value(v[k]));
+  }
+
+  val keys2 = ObjectCtor.call<val>("keys", out);
+  if (keys2["length"].as<int>() == 1 && keys2[0].as<string>() == "_text")
+    return out["_text"];
+  return out;
+}
+
+struct json_tree_walker : pugi::xml_tree_walker {
   val output = val::object();
-  string pretty_str;
-  std::stack<pugi::xml_node *> visit_stack;
-  pugi::xml_node *cur_node;
-  pugi::xml_node *prev_node;
+  std::vector<val> elem_stack;
 
-  virtual bool begin(pugi::xml_node &node) {
-    cur_node = &node;
-    return true;
-  }
-  virtual bool end(pugi::xml_node &node) {
-    prev_node = &node;
-    return true;
-  }
+  bool for_each(pugi::xml_node &node) override {
+    switch (node.type()) {
+    case pugi::node_element: {
+      const int d = depth();
+      while (static_cast<int>(elem_stack.size()) > d)
+        elem_stack.pop_back();
 
-  virtual bool for_each(pugi::xml_node &node) {
-    bool changing_level = false;
-    if (depth() > visit_stack.size()) {
-      // std::cout << "going down, old depth=" << visit_stack.size() << ", new
-      // depth=" << depth() << "\n";
-      visit_stack.push(&node);
-      changing_level = true;
-    }
-
-    if (depth() < visit_stack.size()) {
-      // std::cout << "going up, old depth=" << visit_stack.size() << ", new
-      // depth=" << depth() << "\n";
-      visit_stack.pop();
-      changing_level = true;
-    }
-
-    for (int i = 0; i < depth(); ++i) {
-      // std::cout << "  "; // indentation
-      pretty_str += "  ";
-    }
-
-    string node_type = std::string(node_types[node.type()]);
-
-    if (node_type == "cdata") {
-    }
-
-    if (node_type == "element") {
-      std::vector<val> arr;
-
-      val obj = val::object();
-
-      // annotate props
-      val props_obj = val::object();
-      auto attrs = node.attributes();
-      size_t attrs_count = std::distance(attrs.begin(), attrs.end());
-
-      if (attrs_count > 0) {
-        for (pugi::xml_attribute a : node.attributes()) {
-          // std::cout << "prop " << a.name() << "=" << a.value() << "'\n";
-          // pretty_str << "prop " << a.name() << "=" << a.value() << "'\n";
-          pretty_str.append(string(a.name()) + "=" + string(a.value()) + "\n");
-          props_obj.set(std::string(a.name()), std::string(a.value()));
-        }
-        obj.set("$", props_obj);
+      val elem = val::object();
+      bool has_attr = false;
+      val attrs = val::object();
+      for (pugi::xml_attribute a : node.attributes()) {
+        has_attr = true;
+        attrs.set(string(a.name()), string(a.value()));
       }
+      if (has_attr)
+        elem.set("$", attrs);
 
-      arr.push_back(obj);
-
-      auto children = node.children();
-      size_t children_count = std::distance(children.begin(), children.end());
-
-      // std::cout << node.name() << " has " << children_count << " children" <<
-      // std::endl; pretty_str << node.name() << " has " << children_count << "
-      // children" << std::endl;
-
-      if (children_count > 0) {
-        for (pugi::xml_node child : children) {
-          // std::cout << ", child " << child.name();
-          pretty_str.append(string(child.name()) + "=" + string(child.value()) +
-                            "\n");
-        }
-      }
-
-      // std::cout << std::endl;
-
-      output.set(node.name(), val::array(arr));
+      val parent = d == 0 ? output : elem_stack[d - 1];
+      merge_child(parent, string(node.name()), elem);
+      elem_stack.push_back(elem);
+      break;
     }
-
-    if (node_type == "pcdata") {
+    case pugi::node_pcdata:
+    case pugi::node_cdata: {
+      const int d = depth();
+      if (d == 0 || elem_stack.empty())
+        break;
+      const string text = trim_xml_text(node.value());
+      if (text.empty())
+        break;
+      append_text(elem_stack[d - 1], text);
+      break;
     }
-
-    // std::cout << node_types[node.type()] << ": name='" << node.name() << "',
-    // value='" << node.value() << "'\n";
-
-    return true; // continue traversal
+    default:
+      break;
+    }
+    return true;
   }
 };
 
 val to_json(string xml) {
   pugi::xml_document doc;
-  simple_walker walker;
+  if (!doc.load_string(xml.c_str()))
+    return val::object();
 
-  if (doc.load_string(xml.c_str())) {
-    doc.traverse(walker);
-    // free(&j);
-    // free(&doc);
-    // free(&xml);
-  }
-
-  return walker.output;
+  json_tree_walker walker;
+  doc.traverse(walker);
+  return simplify_value(walker.output);
 }
 
 struct PrettyPrintOpts {
