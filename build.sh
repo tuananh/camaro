@@ -26,6 +26,7 @@ echo "2/2 Compiling camaro wasm bindings"
     ${OPTIMIZE} \
     -DNDEBUG \
     -s 'MALLOC="emmalloc"' \
+    -s 'ALLOW_MEMORY_GROWTH=1' \
     -I node_modules/pugixml/src \
     -I node_modules/json/single_include/nlohmann \
     -o dist/camaro.js \
