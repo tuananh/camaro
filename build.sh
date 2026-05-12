@@ -27,6 +27,8 @@ echo "2/2 Compiling camaro wasm bindings"
     ${OPTIMIZE} \
     -DNDEBUG \
     -s 'MALLOC="emmalloc"' \
+    -s EXPORTED_FUNCTIONS='["_malloc","_free"]' \
+    -s 'EXPORTED_RUNTIME_METHODS=[HEAPU8]' \
     -s 'ALLOW_MEMORY_GROWTH=1' \
     -I node_modules/pugixml/src \
     -I node_modules/json/single_include/nlohmann \

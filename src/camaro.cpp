@@ -1,6 +1,7 @@
 #include "../node_modules/fifo_map/src/fifo_map.hpp"
 #include "../node_modules/json/single_include/nlohmann/json.hpp"
 #include "../node_modules/pugixml/src/pugixml.hpp"
+#include <cstdint>
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
 #include <memory>
@@ -189,27 +190,37 @@ template <typename T> void walk(T &doc, json &n, val &output, string key,
   }
 }
 
+static val transform_loaded_doc(pugi::xml_document &doc,
+                                const std::string &json_template) {
+  val output = val::object();
+  json j = json::parse(json_template);
+  XpathCache xc;
+
+  if (j.is_array()) {
+    return query_array(doc, j, xc);
+  }
+  for (json::iterator it = j.begin(); it != j.end(); ++it) {
+    walk(doc, it.value(), output, it.key(), xc);
+  }
+  return output;
+}
+
 val transform(string xml, string json_template) {
   pugi::xml_document doc;
-  val output = val::object();
+  if (!doc.load_string(xml.c_str()))
+    return val::object();
+  return transform_loaded_doc(doc, json_template);
+}
 
-  if (doc.load_string(xml.c_str())) {
-    json j = json::parse(json_template);
-    XpathCache xc;
-
-    if (j.is_array()) {
-      return query_array(doc, j, xc);
-    } else {
-      for (json::iterator it = j.begin(); it != j.end(); ++it) {
-        walk(doc, it.value(), output, it.key(), xc);
-      }
-    }
-    // free(&j);
-    // free(&doc);
-    // free(&xml);
+val transform_from_utf8(std::uintptr_t xml_ptr, size_t xml_len,
+                          string json_template) {
+  auto *p = reinterpret_cast<const char *>(xml_ptr);
+  pugi::xml_document doc;
+  if (!doc.load_buffer(p, xml_len, pugi::parse_default,
+                       pugi::encoding_utf8)) {
+    return val::object();
   }
-
-  return output;
+  return transform_loaded_doc(doc, json_template);
 }
 
 static string trim_xml_text(const char *s) {
@@ -320,14 +331,28 @@ struct json_tree_walker : pugi::xml_tree_walker {
   }
 };
 
+static val to_json_loaded_doc(pugi::xml_document &doc) {
+  json_tree_walker walker;
+  doc.traverse(walker);
+  return simplify_value(walker.output);
+}
+
 val to_json(string xml) {
   pugi::xml_document doc;
   if (!doc.load_string(xml.c_str()))
     return val::object();
 
-  json_tree_walker walker;
-  doc.traverse(walker);
-  return simplify_value(walker.output);
+  return to_json_loaded_doc(doc);
+}
+
+val to_json_from_utf8(std::uintptr_t xml_ptr, size_t xml_len) {
+  auto *p = reinterpret_cast<const char *>(xml_ptr);
+  pugi::xml_document doc;
+  if (!doc.load_buffer(p, xml_len, pugi::parse_default,
+                       pugi::encoding_utf8)) {
+    return val::object();
+  }
+  return to_json_loaded_doc(doc);
 }
 
 struct PrettyPrintOpts {
@@ -344,14 +369,33 @@ struct xml_string_writer : pugi::xml_writer {
   }
 };
 
+static void pretty_print_into_writer(const pugi::xml_document &doc,
+                                     xml_string_writer &writer,
+                                     const PrettyPrintOpts &opts) {
+  std::string indent(opts.indent_size, ' ');
+  doc.print(writer, indent.c_str(), pugi::format_default,
+            pugi::encoding_utf8);
+}
+
 string pretty_print(string xml, PrettyPrintOpts opts) {
   pugi::xml_document doc;
   xml_string_writer writer;
-  std::string indent(opts.indent_size, ' ');
 
-  if (doc.load_string(xml.c_str())) {
-    doc.print(writer, indent.c_str(), pugi::format_default,
-              pugi::encoding_utf8);
+  if (doc.load_string(xml.c_str()))
+    pretty_print_into_writer(doc, writer, opts);
+
+  return writer.result;
+}
+
+string pretty_print_from_utf8(std::uintptr_t xml_ptr, size_t xml_len,
+                              PrettyPrintOpts opts) {
+  auto *p = reinterpret_cast<const char *>(xml_ptr);
+  pugi::xml_document doc;
+  xml_string_writer writer;
+
+  if (doc.load_buffer(p, xml_len, pugi::parse_default,
+                      pugi::encoding_utf8)) {
+    pretty_print_into_writer(doc, writer, opts);
   }
 
   return writer.result;
@@ -362,6 +406,9 @@ EMSCRIPTEN_BINDINGS(my_module) {
       .field("indentSize", &PrettyPrintOpts::indent_size);
 
   function("transform", &transform);
+  function("transformFromUtf8", &transform_from_utf8);
   function("toJson", &to_json);
+  function("toJsonFromUtf8", &to_json_from_utf8);
   function("prettyPrint", &pretty_print);
+  function("prettyPrintFromUtf8", &pretty_print_from_utf8);
 }

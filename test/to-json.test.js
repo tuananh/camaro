@@ -1,9 +1,13 @@
 const t = require('tape')
+const { Buffer } = require('node:buffer')
 const { toJson } = require('../')
 
-/** Inputs that must throw before WASM (non-empty string guard). */
+/** Inputs that must throw before WASM (validateXml guard). */
 const INVALID_INPUTS = [
     { label: 'empty string', input: '' },
+    { label: 'empty Buffer', input: Buffer.alloc(0) },
+    { label: 'empty Uint8Array', input: new Uint8Array() },
+    { label: 'empty ArrayBuffer', input: new ArrayBuffer(0) },
     { label: 'null', input: null },
     { label: 'undefined', input: undefined },
     { label: 'number zero', input: 0 },
