@@ -12,7 +12,6 @@
 * Transform XML to JSON.
     * Only take properties that you're interested in.
     * Output is ready to use JS object.
-    * For those that need a complete document parser, checkout my other project [@tuananh/sax-parser](https://github.com/tuananh/sax-parser) - a pretty fast native module, XML-compliant SAX parser for Node.js.
 
 * Written in C++ and compiled down to WebAssembly, so no re-compilation needed.
     * No need to build a binary whenever a new Node version is released.
@@ -20,7 +19,7 @@
     * AWS Lambda friendly (or serverless in general).
 
 * It's pretty fast on large XML strings.
-    * We're using [pugixml](http://pugixml.org/) under the hood. It's one of the fastest XML parsers around.
+    * We're using [our fork of pugixml](http://pugixml.org/) under the hood. It's one of the fastest XML parsers around.
     * Scales well with multi-core processors by use of a `worker_threads` pool (Node >= 12).
 
 * Pretty print XML.
@@ -50,7 +49,7 @@ The whole reason for me creating this is because most of the time, I'm just inte
 ## Installation
 
 ```sh
-yarn add camaro
+pnpm add camaro
 # npm install camaro
 ```
 
