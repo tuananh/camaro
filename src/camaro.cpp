@@ -3,12 +3,12 @@
 #include "../node_modules/pugixml/src/pugixml.hpp"
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
 using namespace emscripten;
 using string = std::string;
-using xquery = pugi::xpath_query;
-using nodeset = pugi::xpath_node_set;
 
 // See https://github.com/nlohmann/json#notes
 // See https://github.com/nlohmann/json/issues/485#issuecomment-333652309
@@ -18,16 +18,45 @@ using my_workaround_fifo_map =
     nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
 using json = nlohmann::basic_json<my_workaround_fifo_map>;
 
+/// Compiling XPath is expensive; expressions repeat across many matched nodes.
+class XpathCache {
+  std::unordered_map<std::string, std::unique_ptr<pugi::xpath_query>> map_;
+
+public:
+  pugi::xpath_query &query_for(const std::string &expr) {
+    auto it = map_.find(expr);
+    if (it != map_.end())
+      return *it->second;
+    auto p = std::make_unique<pugi::xpath_query>(expr.c_str());
+    pugi::xpath_query &ref = *p;
+    map_.emplace(expr, std::move(p));
+    return ref;
+  }
+};
+
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
-template <typename T> void walk(T &doc, json &n, val &output, string key);
+template <typename T> void walk(T &doc, json &n, val &output, string key,
+                              XpathCache &xc);
 
-inline bool start_with(string to_check, string prefix) {
+inline bool start_with(const string &to_check, const string &prefix) {
   return to_check.rfind(prefix, 0) == 0;
 }
 
-ReturnType get_return_type(string &path) {
-  const char ch = path.at(0);
+static val js_array_ctor() {
+  static const val ctor = val::global("Array");
+  return ctor;
+}
+
+static val js_object_ctor() {
+  static const val ctor = val::global("Object");
+  return ctor;
+}
+
+ReturnType get_return_type(const string &path) {
+  if (path.empty())
+    return T_STRING;
+  const char ch = path[0];
   ReturnType t = T_STRING;
   switch (ch) {
   case 'b':
@@ -68,31 +97,25 @@ ReturnType get_return_type(string &path) {
   return t;
 }
 
-template <typename T> bool query_boolean(T &xnode, json &j) {
-  xquery query(j.get<string>().c_str());
-  return query.evaluate_boolean(xnode);
+template <typename T> bool query_boolean(T &xnode, json &j, XpathCache &xc) {
+  const string &path = j.get_ref<const string &>();
+  return xc.query_for(path).evaluate_boolean(xnode);
 }
 
-template <typename T> string query_string(T &xnode, json &j) {
-  string path = j.get<string>();
-  string val = "";
-
-  if (path.find("#") != string::npos) {
-    val = path.substr(1, path.size());
-  } else {
-    xquery query(path.c_str());
-    val = query.evaluate_string(xnode);
+template <typename T> string query_string(T &xnode, json &j, XpathCache &xc) {
+  const string &path = j.get_ref<const string &>();
+  if (!path.empty() && path[0] == '#') {
+    return path.substr(1);
   }
-
-  return val;
+  return xc.query_for(path).evaluate_string(xnode);
 }
 
-template <typename T> double query_number(T &xnode, json &j) {
-  xquery query(j.get<string>().c_str());
-  return query.evaluate_number(xnode);
+template <typename T> double query_number(T &xnode, json &j, XpathCache &xc) {
+  const string &path = j.get_ref<const string &>();
+  return xc.query_for(path).evaluate_number(xnode);
 }
 
-template <typename T> val query_array(T &doc, json &node) {
+template <typename T> val query_array(T &doc, json &node, XpathCache &xc) {
   std::vector<val> arr;
 
   // a special case for backward compatible with xpath-object-transform
@@ -100,31 +123,31 @@ template <typename T> val query_array(T &doc, json &node) {
     return val::array(arr);
   }
 
-  string base_path = node[0].get<string>();
-  xquery q(base_path.c_str());
-  pugi::xpath_node_set nodes = q.evaluate_node_set(doc);
+  const string &base_path = node[0].get_ref<const string &>();
+  pugi::xpath_node_set nodes =
+      xc.query_for(base_path).evaluate_node_set(doc);
+  arr.reserve(nodes.size());
 
+  json &inner_template = node[1];
   for (size_t i = 0; i < nodes.size(); ++i) {
     pugi::xpath_node n = nodes[i];
-    auto inner = node[1];
 
-    if (inner.is_object()) {
+    if (inner_template.is_object()) {
       val obj = val::object();
-      for (json::iterator it = inner.begin(); it != inner.end(); ++it) {
-        walk(n, it.value(), obj, it.key());
+      for (json::iterator it = inner_template.begin(); it != inner_template.end();
+           ++it) {
+        walk(n, it.value(), obj, it.key(), xc);
       }
       arr.push_back(obj);
-    } else if (inner.is_string()) {
-      string path = inner;
-      ReturnType type = get_return_type((path));
+    } else if (inner_template.is_string()) {
+      const string &path = inner_template.get_ref<const string &>();
+      ReturnType type = get_return_type(path);
       if (type == T_STRING) {
-        arr.push_back(val(query_string(n, inner)));
-      }
-      if (type == T_NUMBER) {
-        arr.push_back(val(query_number(n, inner)));
-      }
-      if (type == T_BOOLEAN) {
-        arr.push_back(val(query_boolean(n, inner)));
+        arr.push_back(val(query_string(n, inner_template, xc)));
+      } else if (type == T_NUMBER) {
+        arr.push_back(val(query_number(n, inner_template, xc)));
+      } else if (type == T_BOOLEAN) {
+        arr.push_back(val(query_boolean(n, inner_template, xc)));
       }
     }
   }
@@ -133,36 +156,34 @@ template <typename T> val query_array(T &doc, json &node) {
   return val::array(arr);
 }
 
-template <typename T> val query_object(T &doc, json &node) {
+template <typename T> val query_object(T &doc, json &node, XpathCache &xc) {
   val output = val::object();
 
   for (json::iterator it = node.begin(); it != node.end(); ++it) {
-    string key = it.key();
-    walk(doc, *it, output, key);
+    walk(doc, it.value(), output, it.key(), xc);
   }
 
   return output;
 }
 
-template <typename T> void walk(T &doc, json &n, val &output, string key) {
+template <typename T> void walk(T &doc, json &n, val &output, string key,
+                               XpathCache &xc) {
   if (n.is_array()) {
-    output.set(key, query_array(doc, n));
+    output.set(key, query_array(doc, n, xc));
   } else if (n.is_object()) {
-    output.set(key, query_object(doc, n));
+    output.set(key, query_object(doc, n, xc));
   } else if (n.is_string()) {
-    string path = n.get<string>();
+    const string &path = n.get_ref<const string &>();
     if (path.empty()) {
       output.set(key, "");
     } else {
       ReturnType type = get_return_type(path);
       if (type == T_NUMBER) {
-        output.set(key, query_number(doc, n));
-      }
-      if (type == T_STRING) {
-        output.set(key, query_string(doc, n));
-      }
-      if (type == T_BOOLEAN) {
-        output.set(key, query_boolean(doc, n));
+        output.set(key, query_number(doc, n, xc));
+      } else if (type == T_STRING) {
+        output.set(key, query_string(doc, n, xc));
+      } else if (type == T_BOOLEAN) {
+        output.set(key, query_boolean(doc, n, xc));
       }
     }
   }
@@ -174,14 +195,13 @@ val transform(string xml, string json_template) {
 
   if (doc.load_string(xml.c_str())) {
     json j = json::parse(json_template);
+    XpathCache xc;
 
     if (j.is_array()) {
-      return query_array(doc, j);
+      return query_array(doc, j, xc);
     } else {
       for (json::iterator it = j.begin(); it != j.end(); ++it) {
-        string key = it.key();
-        json &node = j[key];
-        walk(doc, node, output, key);
+        walk(doc, it.value(), output, it.key(), xc);
       }
     }
     // free(&j);
@@ -209,8 +229,7 @@ static void merge_child(val parent, const string &key, val child) {
     parent.set(key, child);
     return;
   }
-  val ArrayCtor = val::global("Array");
-  if (existing.instanceof(ArrayCtor)) {
+  if (existing.instanceof(js_array_ctor())) {
     existing.call<void>("push", child);
   } else {
     val arr = val::array();
@@ -231,8 +250,7 @@ static void append_text(val parent, const string &chunk) {
 }
 
 static val simplify_value(val v) {
-  val ArrayCtor = val::global("Array");
-  if (v.instanceof(ArrayCtor)) {
+  if (v.instanceof(js_array_ctor())) {
     const int len = v["length"].as<int>();
     val out = val::array();
     for (int i = 0; i < len; ++i)
@@ -240,11 +258,11 @@ static val simplify_value(val v) {
     return out;
   }
 
-  val ObjectCtor = val::global("Object");
-  if (!v.instanceof(ObjectCtor))
+  val object_ctor = js_object_ctor();
+  if (!v.instanceof(object_ctor))
     return v;
 
-  val keys = ObjectCtor.call<val>("keys", v);
+  val keys = object_ctor.call<val>("keys", v);
   const int n = keys["length"].as<int>();
   val out = val::object();
   for (int i = 0; i < n; ++i) {
@@ -252,7 +270,7 @@ static val simplify_value(val v) {
     out.set(k, simplify_value(v[k]));
   }
 
-  val keys2 = ObjectCtor.call<val>("keys", out);
+  val keys2 = object_ctor.call<val>("keys", out);
   if (keys2["length"].as<int>() == 1 && keys2[0].as<string>() == "_text")
     return out["_text"];
   return out;

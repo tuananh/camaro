@@ -11,7 +11,8 @@
     },
     "scripts": {
         "test": "tape test/*.test.js",
-        "bench": "node benchmark/transform.js",
+        "bench:all": "node benchmark/transform.js",
+        "bench:camaro": "node benchmark/camaro-only.js",
         "bench:to-json": "node benchmark/to-json.js",
         "install-deps": "napa",
         "build": "docker run --rm -v $(pwd):/src emscripten/emsdk:5.0.7 ./build.sh",
