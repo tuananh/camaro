@@ -6,6 +6,7 @@
 #include <emscripten/val.h>
 #include <memory>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace emscripten;
@@ -37,21 +38,18 @@ public:
 
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
-template <typename T> void walk(T &doc, json &n, val &output, string key,
-                              XpathCache &xc);
+template <typename T>
+void walk(T &doc, json &n, json &output, const string &key, XpathCache &xc);
 
 inline bool start_with(const string &to_check, const string &prefix) {
   return to_check.rfind(prefix, 0) == 0;
 }
 
-static val js_array_ctor() {
-  static const val ctor = val::global("Array");
-  return ctor;
-}
-
-static val js_object_ctor() {
-  static const val ctor = val::global("Object");
-  return ctor;
+/// One JS boundary crossing for an arbitrary JSON tree (avoids per-field embind).
+static val json_to_val(const json &j) {
+  const string s = j.dump();
+  static const val JSON = val::global("JSON");
+  return JSON.call<val>("parse", val(s));
 }
 
 ReturnType get_return_type(const string &path) {
@@ -116,75 +114,73 @@ template <typename T> double query_number(T &xnode, json &j, XpathCache &xc) {
   return xc.query_for(path).evaluate_number(xnode);
 }
 
-template <typename T> val query_array(T &doc, json &node, XpathCache &xc) {
-  std::vector<val> arr;
+template <typename T> json query_array(T &doc, json &node, XpathCache &xc) {
+  json arr = json::array();
 
   // a special case for backward compatible with xpath-object-transform
   if (node.empty()) {
-    return val::array(arr);
+    return arr;
   }
 
   const string &base_path = node[0].get_ref<const string &>();
   pugi::xpath_node_set nodes =
       xc.query_for(base_path).evaluate_node_set(doc);
-  arr.reserve(nodes.size());
 
   json &inner_template = node[1];
   for (size_t i = 0; i < nodes.size(); ++i) {
     pugi::xpath_node n = nodes[i];
 
     if (inner_template.is_object()) {
-      val obj = val::object();
+      json obj = json::object();
       for (json::iterator it = inner_template.begin(); it != inner_template.end();
            ++it) {
         walk(n, it.value(), obj, it.key(), xc);
       }
-      arr.push_back(obj);
+      arr.push_back(std::move(obj));
     } else if (inner_template.is_string()) {
       const string &path = inner_template.get_ref<const string &>();
       ReturnType type = get_return_type(path);
       if (type == T_STRING) {
-        arr.push_back(val(query_string(n, inner_template, xc)));
+        arr.push_back(query_string(n, inner_template, xc));
       } else if (type == T_NUMBER) {
-        arr.push_back(val(query_number(n, inner_template, xc)));
+        arr.push_back(query_number(n, inner_template, xc));
       } else if (type == T_BOOLEAN) {
-        arr.push_back(val(query_boolean(n, inner_template, xc)));
+        arr.push_back(query_boolean(n, inner_template, xc));
       }
     }
   }
 
-  // return arr;
-  return val::array(arr);
+  return arr;
 }
 
-template <typename T> val query_object(T &doc, json &node, XpathCache &xc) {
-  val output = val::object();
+template <typename T> json query_object(T &doc, json &node, XpathCache &xc) {
+  json out = json::object();
 
   for (json::iterator it = node.begin(); it != node.end(); ++it) {
-    walk(doc, it.value(), output, it.key(), xc);
+    walk(doc, it.value(), out, it.key(), xc);
   }
 
-  return output;
+  return out;
 }
 
-template <typename T> void walk(T &doc, json &n, val &output, string key,
-                               XpathCache &xc) {
+template <typename T>
+void walk(T &doc, json &n, json &output, const string &key, XpathCache &xc) {
   if (n.is_array()) {
-    output.set(key, query_array(doc, n, xc));
+    output[key] = query_array(doc, n, xc);
   } else if (n.is_object()) {
-    output.set(key, query_object(doc, n, xc));
+    output[key] = query_object(doc, n, xc);
   } else if (n.is_string()) {
     const string &path = n.get_ref<const string &>();
     if (path.empty()) {
-      output.set(key, "");
+      output[key] = "";
     } else {
       ReturnType type = get_return_type(path);
       if (type == T_NUMBER) {
-        output.set(key, query_number(doc, n, xc));
+        output[key] = query_number(doc, n, xc);
       } else if (type == T_STRING) {
-        output.set(key, query_string(doc, n, xc));
+        output[key] = query_string(doc, n, xc);
       } else if (type == T_BOOLEAN) {
-        output.set(key, query_boolean(doc, n, xc));
+        output[key] = query_boolean(doc, n, xc);
       }
     }
   }
@@ -192,17 +188,19 @@ template <typename T> void walk(T &doc, json &n, val &output, string key,
 
 static val transform_loaded_doc(pugi::xml_document &doc,
                                 const std::string &json_template) {
-  val output = val::object();
   json j = json::parse(json_template);
   XpathCache xc;
+  json out;
 
   if (j.is_array()) {
-    return query_array(doc, j, xc);
+    out = query_array(doc, j, xc);
+  } else {
+    out = json::object();
+    for (json::iterator it = j.begin(); it != j.end(); ++it) {
+      walk(doc, it.value(), out, it.key(), xc);
+    }
   }
-  for (json::iterator it = j.begin(); it != j.end(); ++it) {
-    walk(doc, it.value(), output, it.key(), xc);
-  }
-  return output;
+  return json_to_val(out);
 }
 
 val transform(string xml, string json_template) {
@@ -234,94 +232,111 @@ static string trim_xml_text(const char *s) {
   return str.substr(start, end - start + 1);
 }
 
-static void merge_child(val parent, const string &key, val child) {
-  val existing = parent[key];
-  if (existing.isUndefined()) {
-    parent.set(key, child);
+static void merge_child_json(json &parent, const string &key, json child) {
+  if (!parent.contains(key)) {
+    parent[key] = std::move(child);
     return;
   }
-  if (existing.instanceof(js_array_ctor())) {
-    existing.call<void>("push", child);
+  json &existing = parent[key];
+  if (existing.is_array()) {
+    existing.push_back(std::move(child));
   } else {
-    val arr = val::array();
-    arr.call<void>("push", existing);
-    arr.call<void>("push", child);
-    parent.set(key, arr);
+    json arr = json::array();
+    arr.push_back(std::move(existing));
+    arr.push_back(std::move(child));
+    parent[key] = std::move(arr);
   }
 }
 
-static void append_text(val parent, const string &chunk) {
-  if (chunk.empty())
-    return;
-  val cur = parent["_text"];
-  if (cur.isUndefined())
-    parent.set("_text", val(chunk));
-  else
-    parent.set("_text", val(cur.as<string>() + chunk));
-}
-
-static val simplify_value(val v) {
-  if (v.instanceof(js_array_ctor())) {
-    const int len = v["length"].as<int>();
-    val out = val::array();
-    for (int i = 0; i < len; ++i)
-      out.call<void>("push", simplify_value(v[i]));
+static json simplify_json(const json &v) {
+  if (v.is_array()) {
+    json out = json::array();
+    for (const auto &el : v)
+      out.push_back(simplify_json(el));
     return out;
   }
-
-  val object_ctor = js_object_ctor();
-  if (!v.instanceof(object_ctor))
+  if (!v.is_object())
     return v;
 
-  val keys = object_ctor.call<val>("keys", v);
-  const int n = keys["length"].as<int>();
-  val out = val::object();
-  for (int i = 0; i < n; ++i) {
-    const string k = keys[i].as<string>();
-    out.set(k, simplify_value(v[k]));
-  }
+  json out = json::object();
+  for (json::const_iterator it = v.begin(); it != v.end(); ++it)
+    out[it.key()] = simplify_json(it.value());
 
-  val keys2 = object_ctor.call<val>("keys", out);
-  if (keys2["length"].as<int>() == 1 && keys2[0].as<string>() == "_text")
+  if (out.size() == 1 && out.contains("_text"))
     return out["_text"];
   return out;
 }
 
+/// Built in-memory with stable pointers; folded to json once (duplicate sibling
+/// names merge into arrays without invalidating parent references).
+struct XmlElemBuilder {
+  json attrs = json::object();
+  bool has_attrs = false;
+  string text;
+  std::vector<std::pair<string, std::unique_ptr<XmlElemBuilder>>> children;
+};
+
+static void append_text_builder(XmlElemBuilder &elem, const string &chunk) {
+  if (chunk.empty())
+    return;
+  if (elem.text.empty())
+    elem.text = chunk;
+  else
+    elem.text += chunk;
+}
+
+static void append_text_json(json &elem, const string &chunk) {
+  if (chunk.empty())
+    return;
+  if (!elem.contains("_text"))
+    elem["_text"] = chunk;
+  else
+    elem["_text"] = elem["_text"].get_ref<const string &>() + chunk;
+}
+
+static json fold_builder(const XmlElemBuilder &n) {
+  json elem = json::object();
+  if (n.has_attrs)
+    elem["$"] = n.attrs;
+  for (const auto &kv : n.children)
+    merge_child_json(elem, kv.first, fold_builder(*kv.second));
+  if (!n.text.empty())
+    append_text_json(elem, n.text);
+  return elem;
+}
+
 struct json_tree_walker : pugi::xml_tree_walker {
-  val output = val::object();
-  std::vector<val> elem_stack;
+  XmlElemBuilder synthetic_root;
+  std::vector<XmlElemBuilder *> stack;
 
   bool for_each(pugi::xml_node &node) override {
     switch (node.type()) {
     case pugi::node_element: {
       const int d = depth();
-      while (static_cast<int>(elem_stack.size()) > d)
-        elem_stack.pop_back();
+      while (static_cast<int>(stack.size()) > d)
+        stack.pop_back();
 
-      val elem = val::object();
-      bool has_attr = false;
-      val attrs = val::object();
+      auto elem = std::make_unique<XmlElemBuilder>();
       for (pugi::xml_attribute a : node.attributes()) {
-        has_attr = true;
-        attrs.set(string(a.name()), string(a.value()));
+        elem->has_attrs = true;
+        elem->attrs[string(a.name())] = string(a.value());
       }
-      if (has_attr)
-        elem.set("$", attrs);
 
-      val parent = d == 0 ? output : elem_stack[d - 1];
-      merge_child(parent, string(node.name()), elem);
-      elem_stack.push_back(elem);
+      XmlElemBuilder *parent = d == 0 ? &synthetic_root : stack[d - 1];
+      const string ename(node.name());
+      parent->children.emplace_back(ename, std::move(elem));
+      stack.push_back(parent->children.back().second.get());
       break;
     }
     case pugi::node_pcdata:
     case pugi::node_cdata: {
       const int d = depth();
-      if (d == 0 || elem_stack.empty())
+      if (d == 0 || stack.empty())
         break;
-      const string text = trim_xml_text(node.value());
-      if (text.empty())
+      const string t = trim_xml_text(node.value());
+      if (t.empty())
         break;
-      append_text(elem_stack[d - 1], text);
+      append_text_builder(*stack[d - 1], t);
       break;
     }
     default:
@@ -334,7 +349,10 @@ struct json_tree_walker : pugi::xml_tree_walker {
 static val to_json_loaded_doc(pugi::xml_document &doc) {
   json_tree_walker walker;
   doc.traverse(walker);
-  return simplify_value(walker.output);
+  json output = json::object();
+  for (const auto &kv : walker.synthetic_root.children)
+    merge_child_json(output, kv.first, fold_builder(*kv.second));
+  return json_to_val(simplify_json(output));
 }
 
 val to_json(string xml) {
