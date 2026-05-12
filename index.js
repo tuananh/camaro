@@ -6,11 +6,22 @@ if (NODE_MAJOR_VERSION < 12 || process.env.CAMARO_FORCE_SINGLE_THREAD === 'true'
     console.warn('[camaro] worker_threads is not available, expect performance drop. Try using Node version >= 12.')
     const workerFn = require('./worker')
     pool = {
-        run: async (args) => workerFn(args)
+        run(task, opts) {
+            void opts
+            return workerFn(task)
+        },
     }
 } else {
     const WorkerPool = require('piscina')
-    pool = new WorkerPool({ filename: resolve(__dirname, 'worker.js') })
+    const piscina = new WorkerPool({ filename: resolve(__dirname, 'worker.js') })
+    pool = {
+        run(task, opts) {
+            if (opts && opts.transferList && opts.transferList.length > 0) {
+                return piscina.run(task, { transferList: opts.transferList })
+            }
+            return piscina.run(task)
+        },
+    }
 }
 
 /** Wasm Embind Utf-16 string → std::string is slower than Utf-8 bytes + malloc; reuse the Utf-8 path. */
@@ -23,8 +34,32 @@ function utf8BytesFromJsString(xml) {
         : Buffer.from(xml, 'utf8')
 }
 
-function xmlInputForWorker(xml) {
-    return typeof xml === 'string' ? utf8BytesFromJsString(xml) : xml
+function canTransferUnderlyingBuffer(view) {
+    if (!(view instanceof Uint8Array) || view.byteLength === 0) return false
+    return view.byteOffset === 0 && view.byteLength === view.buffer.byteLength
+}
+
+/**
+ * Owned Utf-8 from `TextEncoder`/Buffer-from-string can be transferred; user-supplied Binaries skip (avoid detach).
+ * @returns {{ xmlWire: Uint8Array|Buffer|ArrayBuffer, poolOpts?: { transferList: ArrayBuffer[] } }}
+ */
+function xmlPayloadForWorkerThread(xml) {
+    if (typeof xml === 'string') {
+        const u8 = utf8BytesFromJsString(xml)
+        if (
+            NODE_MAJOR_VERSION >= 12 &&
+            process.env.CAMARO_FORCE_SINGLE_THREAD !== 'true' &&
+            canTransferUnderlyingBuffer(u8)
+        ) {
+            return { xmlWire: u8, poolOpts: { transferList: [u8.buffer] } }
+        }
+        return { xmlWire: u8 }
+    }
+    return { xmlWire: xml }
+}
+
+function dispatchPool(taskBody, poolOpts) {
+    return pool.run(taskBody, poolOpts ?? {})
 }
 
 function isNonEmptyString(str) {
@@ -76,10 +111,14 @@ function transform(xml, template) {
         throw new TypeError('2nd argument (template) must be an object')
     }
 
-    return pool.run({
-        fn: 'transform',
-        args: [xmlInputForWorker(xml), JSON.stringify(template)],
-    })
+    const payload = xmlPayloadForWorkerThread(xml)
+    return dispatchPool(
+        {
+            fn: 'transform',
+            args: [payload.xmlWire, JSON.stringify(template)],
+        },
+        payload.poolOpts,
+    )
 }
 
 /**
@@ -90,7 +129,8 @@ function transform(xml, template) {
 function toJson(xml) {
     validateXml(xml)
 
-    return pool.run({ fn: 'toJson', args: [xmlInputForWorker(xml)] })
+    const payload = xmlPayloadForWorkerThread(xml)
+    return dispatchPool({ fn: 'toJson', args: [payload.xmlWire] }, payload.poolOpts)
 }
 
 /**
@@ -103,7 +143,11 @@ function toJson(xml) {
 function prettyPrint(xml, opts = { indentSize: 2 }) {
     validateXml(xml)
 
-    return pool.run({ fn: 'prettyPrint', args: [xmlInputForWorker(xml), opts] })
+    const payload = xmlPayloadForWorkerThread(xml)
+    return dispatchPool(
+        { fn: 'prettyPrint', args: [payload.xmlWire, opts] },
+        payload.poolOpts,
+    )
 }
 
 /**
