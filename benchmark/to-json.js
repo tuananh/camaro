@@ -1,93 +1,44 @@
+'use strict'
+
 const fs = require('fs')
-const { resolve } = require('path')
 const { toJson } = require('..')
 const { XMLParser } = require('fast-xml-parser')
 const xml2js = require('xml2js')
 const xmljs = require('xml-js')
-const WorkerPool = require('piscina')
+const txml = require('txml')
 
 const fastXmlParser = new XMLParser()
 const xml2jsParser = new xml2js.Parser()
 
-const txmlWorkerPool = new WorkerPool({
-    filename: resolve(__dirname, 'workers/txml-parse.js'),
+const xml = fs.readFileSync(`${__dirname}/fixtures/60kb.xml`, 'utf-8')
+
+;(async () => {
+  const { run, bench, summary } = await import('mitata')
+
+  summary(() => {
+    bench('camaro v6 toJson', function* () {
+      yield async () => await toJson(xml)
+    })
+
+    bench('txml', () => {
+      txml.parse(xml)
+    })
+
+    bench('fast-xml-parser', () => {
+      fastXmlParser.parse(xml)
+    })
+
+    bench('xml2js', function* () {
+      yield async () => await xml2jsParser.parseStringPromise(xml)
+    })
+
+    bench('xml-js', () => {
+      xmljs.xml2js(xml)
+    })
+  })
+
+  await run()
+})().catch((err) => {
+  console.error(err)
+  process.exitCode = 1
 })
-const fxpWorkerPool = new WorkerPool({
-    filename: resolve(__dirname, 'workers/fast-xml-parser.js'),
-})
-
-/**
- * @param {object} param0
- * @param {string} param0.name name of the benchmark
- * @param {function} param0.fn function to benchmark
- * @param {number} param0.iterations number of iterations
- * @param {boolean} param0.async await promises each iteration (worker / camaro pool)
- */
-async function bench({ name = '', fn, iterations = 10000, async = false } = {}) {
-    const start = process.hrtime.bigint()
-
-    if (async) {
-        const results = []
-        for (let i = 0; i < iterations; i++) {
-            results.push(fn())
-        }
-        await Promise.all(results)
-    } else {
-        for (let i = 0; i < iterations; i++) {
-            fn()
-        }
-    }
-
-    const duration = Number((process.hrtime.bigint() - start) / 1_000_000n)
-    const opsPerSecond = (iterations / duration) * 1e3
-    console.log(`${name}: %s ops/sec`, opsPerSecond.toFixed(0))
-
-    return {
-        name,
-        duration,
-        opsPerSecond,
-    }
-}
-
-// Fixture aligns with benchmark/transform.js. txml uses parse-only (see workers/txml-parse.js);
-// transform benchmark uses workers/txml.js which additionally simplifies to the hotel template shape.
-
-const xml = fs.readFileSync(`${__dirname}/fixtures/300kb.xml`, 'utf-8')
-
-async function runBenchmarks() {
-    await bench({
-        name: 'camaro v6 toJson',
-        fn: async () => toJson(xml),
-        async: true,
-    })
-
-    await bench({
-        name: 'txml worker',
-        async: true,
-        fn: async () => txmlWorkerPool.run(xml),
-    })
-
-    await bench({
-        name: 'fast-xml-parser worker',
-        async: true,
-        fn: async () => fxpWorkerPool.run(xml),
-    })
-
-    await bench({
-        name: 'fast-xml-parser',
-        fn: () => fastXmlParser.parse(xml),
-    })
-
-    await bench({
-        name: 'xml2js',
-        async: true,
-        fn: async () => xml2jsParser.parseStringPromise(xml),
-    })
-
-    await bench({
-        name: 'xml-js',
-        fn: () => xmljs.xml2js(xml),
-    })
-}
-
-runBenchmarks()

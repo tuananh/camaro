@@ -26,13 +26,36 @@
 
 ## 🔥 Benchmark
 
-300 KB XML file                      |  100 KB XML file
-:-----------------------------------:|:-------------------------:
-![](benchmark/fixtures/300kb.png)    |  ![](benchmark/fixtures/100kb.png)
+```
+benchmark                   avg (min … max) p75 / p99    (min … top 1%)
+------------------------------------------- -------------------------------
+camaro v6                    404.42 µs/iter 407.35 µs     ▆█               
+                      (334.12 µs … 1.55 ms) 595.17 µs     ██▂              
+                    (  2.70 kb …   1.67 mb)  41.78 kb ▁▂▃████▅▃▂▂▂▁▁▁▁▁▁▁▁▁
 
-60 KB XML file                       |  7 KB XML file
-:-----------------------------------:|:-------------------------:
-![](benchmark/fixtures/60kb.png)     |  ![](benchmark/fixtures/7kb.png)
+txml                         513.43 µs/iter 494.32 µs █▇                   
+                    (480.12 µs … 842.05 µs) 767.88 µs ██                   
+                    ( 78.42 kb …   1.17 mb) 307.91 kb ██▂▂▁▁▂▃▁▁▄▃▂▁▁▁▁▁▁▁▁
+
+fast-xml-parser                2.40 ms/iter   2.39 ms   █                  
+                        (2.28 ms … 3.11 ms)   2.94 ms ▅ █                  
+                    (223.72 kb …   3.74 mb)   2.44 mb █▂█▅▃▃▁▂▂▂▂▂▁▂▂▁▂▂▂▁▁
+
+xml2js                         4.03 ms/iter   4.32 ms  █                   
+                        (3.61 ms … 6.84 ms)   6.75 ms ▇█    ▃              
+                    (110.87 kb …   3.11 mb)   1.71 mb ██▆▄▂▂█▄▁▁▁▁▁▁▁▁▁▁▁▁▁
+
+xml-js                         2.37 ms/iter   2.50 ms  █      █            
+                        (2.09 ms … 3.17 ms)   3.05 ms  █      █▅           
+                    ( 12.83 kb …   3.11 mb)   1.27 mb ▇██▇██▅▄███▄▃▁▁▁▁▁▁▂▁
+
+summary
+  camaro v6
+   1.27x faster than txml
+   5.85x faster than xml-js
+   5.93x faster than fast-xml-parser
+   9.97x faster than xml2js
+```
 
 The XML file is an actual XML response from the Expedia API. I just deleted some nodes to change its size for benchmarking.
 

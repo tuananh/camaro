@@ -4,8 +4,8 @@ const fs = require('fs')
 const path = require('path')
 const { transform, destroy } = require('..')
 
+// CAMARO_BENCH_FIXTURE / CAMARO_BENCH_WARMUP still apply. Sampling is driven by mitata (CAMARO_BENCH_ITERATIONS is unused).
 const fixtureName = process.env.CAMARO_BENCH_FIXTURE || '60kb.xml'
-const iterations = Math.max(1, Number(process.env.CAMARO_BENCH_ITERATIONS || 500))
 const warmup = Math.max(0, Number(process.env.CAMARO_BENCH_WARMUP || 3))
 
 const xmlPath = path.join(__dirname, 'fixtures', fixtureName)
@@ -39,29 +39,23 @@ const template = {
   session_id: '/HotelListResponse/customerSessionId',
 }
 
-async function main() {
+;(async () => {
+  const { run, bench } = await import('mitata')
+
   for (let i = 0; i < warmup; i++) {
     await transform(xml, template)
   }
 
-  const t0 = process.hrtime.bigint()
-  for (let i = 0; i < iterations; i++) {
-    await transform(xml, template)
-  }
-  const elapsedMs = Number(process.hrtime.bigint() - t0) / 1e6
+  bench(
+    `baseline (${fixtureName}, ${xml.length} bytes, ${warmup} warmup)`,
+    function* () {
+      yield async () => await transform(xml, template)
+    }
+  )
 
-  const opsPerSec = iterations / (elapsedMs / 1000)
-  console.log('camaro transform only')
-  console.log(`  fixture: ${fixtureName} (${xml.length} bytes)`)
-  console.log(`  iterations: ${iterations} (serial await, after ${warmup} warmup)`)
-  console.log(`  total: ${elapsedMs.toFixed(1)} ms`)
-  console.log(`  mean: ${(elapsedMs / iterations).toFixed(3)} ms/op`)
-  console.log(`  ops/sec: ${opsPerSec.toFixed(0)}`)
-
+  await run()
   await destroy()
-}
-
-main().catch((err) => {
+})().catch((err) => {
   console.error(err)
   process.exitCode = 1
 })
