@@ -29,5 +29,5 @@ npm run install-deps
 npm run build
 
 # tests
-npm run test
+npm test
 ```

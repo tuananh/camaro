@@ -64,7 +64,6 @@ For complete benchmark, see [benchmark](benchmark/).
 * Please note that **this is an unfair game for camaro** because it only transforms the fields specified in the template.
 The whole reason for me creating this is because most of the time, I'm just interested in some of the data in the whole XML mess.
 * 🚧 Performance on small XML strings will probably be worse than pure JavaScript implementations. If your use cases consists of small XML strings only, you probably don't need this.
-* Some other libraries that I used to use for benchmarks, like `rapidx2j` and `xml2json`, no longer work on Node 14, so I removed them from the benchmark.
 
 ![intro](intro.png)
 
@@ -89,7 +88,7 @@ The rest are pretty much vanilla XPath 1.0.
 
 For complete API documentation, please see [API.md](API.md)
 
-Additional examples can be found in the examples folder at https://github.com/tuananh/camaro/tree/develop/examples or this comprehensive [blog post](https://mdleom.com/blog/2020/01/20/how-to-use-camaro-xml/) by Ming Di Leom.
+Additional examples can be found in the [examples](examples/) folder or this comprehensive [blog post](https://mdleom.com/blog/2020/01/20/how-to-use-camaro-xml/) by Ming Di Leom.
 
 ```js
 const { transform, prettyPrint } = require('camaro')
