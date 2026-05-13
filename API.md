@@ -44,8 +44,6 @@ const template = {
 
 ### `toJson(xml)`
 
-**Not yet implemented**
-
 Transform xml string to JSON where:
 - `xml` - the input xml string
 
