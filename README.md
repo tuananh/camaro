@@ -29,32 +29,32 @@
 ```
 benchmark                   avg (min … max) p75 / p99    (min … top 1%)
 ------------------------------------------- -------------------------------
-camaro v6                    356.11 µs/iter 362.14 µs   █▂                 
-                      (311.88 µs … 1.16 ms) 552.04 µs  ▆██                 
-                    (  2.70 kb …   1.64 mb)  37.70 kb ▃████▇▄▃▃▂▂▁▁▁▁▁▁▁▁▁▁
+camaro v6                    263.89 µs/iter 268.38 µs  █                   
+                      (233.35 µs … 1.28 ms) 490.20 µs  █                   
+                    (  1.94 kb …   1.30 mb)  31.52 kb ██▇▅▄▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁
 
-txml                         524.17 µs/iter 506.52 µs █                    
-                    (494.72 µs … 862.85 µs) 744.52 µs █▂                   
-                    ( 78.95 kb …   1.20 mb) 307.54 kb ██▂▁▁▁▂▁▁▁▁▁▃▂▁▁▁▁▁▁▁
+txml                         525.44 µs/iter 492.49 µs █                    
+                      (484.75 µs … 1.35 ms) 994.34 µs █                    
+                    (166.54 kb …   1.43 mb) 308.04 kb █▂▁▁▁▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁
 
-fast-xml-parser                2.42 ms/iter   2.39 ms   █                  
-                        (2.30 ms … 3.21 ms)   3.03 ms  ▅█                  
-                    (205.40 kb …   3.97 mb)   2.44 mb ▅██▄▃▂▂▁▂▃▁▂▁▁▁▁▁▁▂▂▁
+fast-xml-parser                2.37 ms/iter   2.35 ms █                    
+                        (2.27 ms … 3.78 ms)   3.66 ms █                    
+                    (321.17 kb …   3.66 mb)   2.44 mb █▄▂▂▄▁▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁
 
-xml2js                         3.96 ms/iter   4.46 ms █                    
-                        (3.53 ms … 6.77 ms)   6.75 ms █▆    ▅              
-                    (627.26 kb …   3.34 mb)   1.73 mb ██▄▁▂▂█▄▁▁▁▁▁▁▁▁▁▁▁▁▁
+xml2js                         3.83 ms/iter   3.84 ms █                    
+                        (3.63 ms … 5.47 ms)   5.35 ms █▃                   
+                    (  1.21 mb …   3.22 mb)   1.74 mb ██▇▆▃▂▂▂▁▁▁▁▁▁▁▁▁▁▁▂▂
 
-xml-js                         2.52 ms/iter   2.51 ms ▂█                   
-                        (2.48 ms … 3.21 ms)   3.03 ms ██                   
-                    ( 25.35 kb …   3.05 mb)   1.28 mb ██▆▃▂▂▁▁▁▁▂▁▁▁▁▁▁▁▁▁▁
+xml-js                         2.50 ms/iter   2.47 ms  █                   
+                        (2.45 ms … 3.22 ms)   2.90 ms ▄█                   
+                    ( 41.03 kb …   2.59 mb)   1.27 mb ██▃▂▂▁▁▁▁▁▁▁▁▁▁▁▂▁▁▁▁
 
 summary
   camaro v6
-   1.47x faster than txml
-   6.79x faster than fast-xml-parser
-   7.07x faster than xml-js
-   11.12x faster than xml2js
+   1.99x faster than txml
+   8.99x faster than fast-xml-parser
+   9.46x faster than xml-js
+   14.52x faster than xml2js
 ```
 
 The XML file is an actual XML response from the Expedia API. I just deleted some nodes to change its size for benchmarking.
