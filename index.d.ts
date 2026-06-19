@@ -25,6 +25,12 @@ export type Transformed<T extends Record<string, any>> = {
   [K in keyof T]: Mapped<T[K]>;
 };
 
+type TransformResult<T> = T extends readonly [string, any]
+    ? Mapped<T>
+    : T extends Record<string, any>
+    ? Transformed<T>
+    : never;
+
 export type XmlInput = string | Uint8Array | ArrayBuffer | Buffer;
 
 export function prettyPrint(
@@ -32,8 +38,5 @@ export function prettyPrint(
   opts?: { indentSize: number }
 ): Promise<string>;
 export function toJson(xml: XmlInput): Promise<any>;
-export function transform<const T extends Record<string, any>>(
-  xml: XmlInput,
-  template: T
-): Promise<Transformed<T>>;
+export function transform<const T>(xml: XmlInput, template: T): Promise<TransformResult<T>>;
 export function destroy(): Promise<void>;
