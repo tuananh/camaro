@@ -9,20 +9,15 @@
 
 ## 🤘 Features
 
-* Transform XML to JSON.
-    * Only take properties that you're interested in.
-    * Output is ready to use JS object.
+* Transform XML to JSON: transform only properties you're interested in. Output is ready to use JS object.
 
 * Written in C++ and compiled down to WebAssembly, so no re-compilation needed.
-    * No need to build a binary whenever a new Node version is released.
-    * Works on all major platforms (OS X, Linux and Windows). See Travis CI and AppVeyor build status for details.
-    * AWS Lambda friendly (or serverless in general).
 
-* It's pretty fast on large XML strings.
-    * We're using [our fork of pugixml](http://pugixml.org/) under the hood. It's one of the fastest XML parsers around.
-    * Scales well with multi-core processors by use of a `worker_threads` pool (Node >= 12).
+* Works on all major platforms (Linux, macOS, Windows).
 
-* Pretty print XML.
+* It's pretty fast on large XML strings. We leverage [pugixml](http://pugixml.org) through our own fork.
+
+* Scale well with multi-core processors by the use of `worker_threads` pool.
 
 ## 🔥 Benchmark
 
