@@ -1,6 +1,6 @@
 {
   "name": "camaro",
-  "version": "6.5.0-rc3",
+  "version": "6.5.0-rc4",
   "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
   "homepage": "https://github.com/tuananh/camaro",
   "bugs": "https://github.com/tuananh/camaro/issues",
@@ -34,6 +34,7 @@
     "index.mjs",
     "index.d.ts",
     "lean-pool.js",
+    "pool-worker.js",
     "json-parse.js",
     "worker.js",
     "dist/camaro.js",
