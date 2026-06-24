@@ -69,7 +69,5 @@
         "xml-js": "^1.6.11",
         "xml2js": "^0.6.0"
     },
-    "dependencies": {
-        "piscina": "^5.2.0"
-    }
+    "dependencies": {}
 }

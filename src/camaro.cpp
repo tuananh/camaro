@@ -1,6 +1,7 @@
 #include "../node_modules/fifo_map/src/fifo_map.hpp"
 #include "../node_modules/json/single_include/nlohmann/json.hpp"
 #include "../node_modules/pugixml/src/pugixml.hpp"
+#include <cmath>
 #include <cstdint>
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
@@ -36,20 +37,57 @@ public:
   }
 };
 
+/// Parsed transform templates repeat across calls; cache by string key.
+struct TemplateEntry {
+  json parsed;
+  XpathCache xpath;
+};
+
+class JsonTemplateCache {
+  std::unordered_map<std::string, TemplateEntry> map_;
+
+public:
+  TemplateEntry &entry(const std::string &tmpl) {
+    auto it = map_.find(tmpl);
+    if (it != map_.end())
+      return it->second;
+    auto ins = map_.emplace(tmpl, TemplateEntry{json::parse(tmpl), {}});
+    return ins.first->second;
+  }
+};
+
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
 template <typename T>
-void walk(T &doc, json &n, json &output, const string &key, XpathCache &xc);
+void walk(T &doc, const json &n, json &output, const string &key, XpathCache &xc,
+          bool &has_nan);
 
 inline bool start_with(const string &to_check, const string &prefix) {
   return to_check.rfind(prefix, 0) == 0;
 }
 
-/// One JS boundary crossing for an arbitrary JSON tree (avoids per-field embind).
-static val json_to_val(const json &j) {
-  const string s = j.dump();
+/// JSON has no NaN; number() uses a sentinel restored by parse reviver when needed.
+static constexpr const char kNanSentinel[] = "__camaro_nan__";
+
+static json json_from_number(double n, bool &has_nan) {
+  if (std::isnan(n)) {
+    has_nan = true;
+    return json(kNanSentinel);
+  }
+  return n;
+}
+
+/// Serialize once; worker thread parses with native V8 JSON.parse.
+static string json_to_string(const json &j) { return j.dump(); }
+
+static val json_to_val(const json &j, bool has_nan) {
+  const string s = json_to_string(j);
   static const val JSON = val::global("JSON");
-  return JSON.call<val>("parse", val(s));
+  if (!has_nan)
+    return JSON.call<val>("parse", val(s));
+  static const val REVIVER = val::global("Function").new_(
+      val(string("_,v")), val(string("return v===\"__camaro_nan__\"?NaN:v")));
+  return JSON.call<val>("parse", val(s), REVIVER);
 }
 
 ReturnType get_return_type(const string &path) {
@@ -96,12 +134,12 @@ ReturnType get_return_type(const string &path) {
   return t;
 }
 
-template <typename T> bool query_boolean(T &xnode, json &j, XpathCache &xc) {
+template <typename T> bool query_boolean(T &xnode, const json &j, XpathCache &xc) {
   const string &path = j.get_ref<const string &>();
   return xc.query_for(path).evaluate_boolean(xnode);
 }
 
-template <typename T> string query_string(T &xnode, json &j, XpathCache &xc) {
+template <typename T> string query_string(T &xnode, const json &j, XpathCache &xc) {
   const string &path = j.get_ref<const string &>();
   if (!path.empty() && path[0] == '#') {
     return path.substr(1);
@@ -109,12 +147,13 @@ template <typename T> string query_string(T &xnode, json &j, XpathCache &xc) {
   return xc.query_for(path).evaluate_string(xnode);
 }
 
-template <typename T> double query_number(T &xnode, json &j, XpathCache &xc) {
+template <typename T> double query_number(T &xnode, const json &j, XpathCache &xc) {
   const string &path = j.get_ref<const string &>();
   return xc.query_for(path).evaluate_number(xnode);
 }
 
-template <typename T> json query_array(T &doc, json &node, XpathCache &xc) {
+template <typename T> json query_array(T &doc, const json &node, XpathCache &xc,
+                                       bool &has_nan) {
   json arr = json::array();
 
   // a special case for backward compatible with xpath-object-transform
@@ -126,15 +165,15 @@ template <typename T> json query_array(T &doc, json &node, XpathCache &xc) {
   pugi::xpath_node_set nodes =
       xc.query_for(base_path).evaluate_node_set(doc);
 
-  json &inner_template = node[1];
+  const json &inner_template = node[1];
   for (size_t i = 0; i < nodes.size(); ++i) {
     pugi::xpath_node n = nodes[i];
 
     if (inner_template.is_object()) {
       json obj = json::object();
-      for (json::iterator it = inner_template.begin(); it != inner_template.end();
-           ++it) {
-        walk(n, it.value(), obj, it.key(), xc);
+      for (json::const_iterator it = inner_template.begin();
+           it != inner_template.end(); ++it) {
+        walk(n, it.value(), obj, it.key(), xc, has_nan);
       }
       arr.push_back(std::move(obj));
     } else if (inner_template.is_string()) {
@@ -143,7 +182,8 @@ template <typename T> json query_array(T &doc, json &node, XpathCache &xc) {
       if (type == T_STRING) {
         arr.push_back(query_string(n, inner_template, xc));
       } else if (type == T_NUMBER) {
-        arr.push_back(query_number(n, inner_template, xc));
+        arr.push_back(
+            json_from_number(query_number(n, inner_template, xc), has_nan));
       } else if (type == T_BOOLEAN) {
         arr.push_back(query_boolean(n, inner_template, xc));
       }
@@ -153,22 +193,24 @@ template <typename T> json query_array(T &doc, json &node, XpathCache &xc) {
   return arr;
 }
 
-template <typename T> json query_object(T &doc, json &node, XpathCache &xc) {
+template <typename T> json query_object(T &doc, const json &node, XpathCache &xc,
+                                        bool &has_nan) {
   json out = json::object();
 
-  for (json::iterator it = node.begin(); it != node.end(); ++it) {
-    walk(doc, it.value(), out, it.key(), xc);
+  for (json::const_iterator it = node.begin(); it != node.end(); ++it) {
+    walk(doc, it.value(), out, it.key(), xc, has_nan);
   }
 
   return out;
 }
 
 template <typename T>
-void walk(T &doc, json &n, json &output, const string &key, XpathCache &xc) {
+void walk(T &doc, const json &n, json &output, const string &key, XpathCache &xc,
+          bool &has_nan) {
   if (n.is_array()) {
-    output[key] = query_array(doc, n, xc);
+    output[key] = query_array(doc, n, xc, has_nan);
   } else if (n.is_object()) {
-    output[key] = query_object(doc, n, xc);
+    output[key] = query_object(doc, n, xc, has_nan);
   } else if (n.is_string()) {
     const string &path = n.get_ref<const string &>();
     if (path.empty()) {
@@ -176,7 +218,7 @@ void walk(T &doc, json &n, json &output, const string &key, XpathCache &xc) {
     } else {
       ReturnType type = get_return_type(path);
       if (type == T_NUMBER) {
-        output[key] = query_number(doc, n, xc);
+        output[key] = json_from_number(query_number(doc, n, xc), has_nan);
       } else if (type == T_STRING) {
         output[key] = query_string(doc, n, xc);
       } else if (type == T_BOOLEAN) {
@@ -188,19 +230,27 @@ void walk(T &doc, json &n, json &output, const string &key, XpathCache &xc) {
 
 static val transform_loaded_doc(pugi::xml_document &doc,
                                 const std::string &json_template) {
-  json j = json::parse(json_template);
-  XpathCache xc;
+  static JsonTemplateCache template_cache;
+  TemplateEntry &te = template_cache.entry(json_template);
+  const json &j = te.parsed;
+  XpathCache &xc = te.xpath;
   json out;
+  bool has_nan = false;
 
   if (j.is_array()) {
-    out = query_array(doc, j, xc);
+    out = query_array(doc, j, xc, has_nan);
   } else {
     out = json::object();
-    for (json::iterator it = j.begin(); it != j.end(); ++it) {
-      walk(doc, it.value(), out, it.key(), xc);
+    for (json::const_iterator it = j.begin(); it != j.end(); ++it) {
+      walk(doc, it.value(), out, it.key(), xc, has_nan);
     }
   }
-  return json_to_val(out);
+  if (!has_nan)
+    return val(json_to_string(out));
+  val result = val::object();
+  result.set("json", json_to_string(out));
+  result.set("hasNan", true);
+  return result;
 }
 
 val transform(string xml, string json_template) {
@@ -212,10 +262,11 @@ val transform(string xml, string json_template) {
 
 val transform_from_utf8(std::uintptr_t xml_ptr, size_t xml_len,
                           string json_template) {
-  auto *p = reinterpret_cast<const char *>(xml_ptr);
+  auto *p = reinterpret_cast<char *>(xml_ptr);
   pugi::xml_document doc;
-  if (!doc.load_buffer(p, xml_len, pugi::parse_default,
-                       pugi::encoding_utf8)) {
+  // Buffer is nul-terminated in worker; parse in-place to skip pugixml's copy.
+  if (!doc.load_buffer_inplace(p, xml_len + 1, pugi::parse_default,
+                               pugi::encoding_utf8)) {
     return val::object();
   }
   return transform_loaded_doc(doc, json_template);
@@ -352,7 +403,7 @@ static val to_json_loaded_doc(pugi::xml_document &doc) {
   json output = json::object();
   for (const auto &kv : walker.synthetic_root.children)
     merge_child_json(output, kv.first, fold_builder(*kv.second));
-  return json_to_val(simplify_json(output));
+  return json_to_val(simplify_json(output), false);
 }
 
 val to_json(string xml) {

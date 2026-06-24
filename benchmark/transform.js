@@ -1,7 +1,7 @@
 'use strict'
 
 const fs = require('fs')
-const { transform } = require('..')
+const { transform, destroy } = require('..')
 const { XMLParser } = require('fast-xml-parser')
 const xml2js = require('xml2js')
 const xmljs = require('xml-js')
@@ -64,6 +64,7 @@ const template = {
   })
 
   await run()
+  await destroy()
 })().catch((err) => {
   console.error(err)
   process.exitCode = 1

@@ -19,15 +19,20 @@ function asUint8View(input) {
 function withMallocUtf8(u8View, wasmCall) {
     const M = cachedInstance
     const n = u8View.byteLength
-    const ptr = M._malloc(n)
-    if (!ptr && n !== 0) throw new Error('camaro WASM heap allocation failed')
-    try {
-        M.HEAPU8.set(u8View.subarray(0, n), ptr)
-        return wasmCall(ptr, n)
-    } finally {
-        if (ptr) M._free(ptr)
+    if (n === 0) return wasmCall(0, 0)
+    const need = n + 1
+    if (!withMallocUtf8.scratch || withMallocUtf8.cap < need) {
+        if (withMallocUtf8.scratch) M._free(withMallocUtf8.scratch)
+        withMallocUtf8.cap = Math.max(need, withMallocUtf8.cap * 2 || 65536)
+        withMallocUtf8.scratch = M._malloc(withMallocUtf8.cap)
+        if (!withMallocUtf8.scratch) throw new Error('camaro WASM heap allocation failed')
     }
+    M.HEAPU8.set(u8View.subarray(0, n), withMallocUtf8.scratch)
+    M.HEAPU8[withMallocUtf8.scratch + n] = 0
+    return wasmCall(withMallocUtf8.scratch, n)
 }
+withMallocUtf8.scratch = 0
+withMallocUtf8.cap = 0
 
 // Non-MODULARIZE emscripten exports the Module object; wasm init is async.
 const ready = new Promise((resolve) => {
@@ -46,8 +51,7 @@ const ready = new Promise((resolve) => {
     }
 })
 
-module.exports = async ({fn, args}) => {
-    await ready
+function runTask({ fn, args }) {
     if (fn === 'transform') {
         const [xml, tmplStr] = args
         const u8 = asUint8View(xml)
@@ -73,4 +77,14 @@ module.exports = async ({fn, args}) => {
         return callWasmBinding(fn, xml, opts)
     }
     return callWasmBinding(fn, ...args)
+}
+
+module.exports = async (task) => {
+    await ready
+    return runTask(task)
+}
+module.exports.whenReady = () => ready
+module.exports.runSync = (task) => {
+    if (!cachedInstance) throw new Error('camaro is not initialized yet.')
+    return runTask(task)
 }

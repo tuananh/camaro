@@ -8,18 +8,20 @@ if (NODE_MAJOR_VERSION < 12 || process.env.CAMARO_FORCE_SINGLE_THREAD === 'true'
     pool = {
         run(task, opts) {
             void opts
-            return workerFn(task)
+            return workerFn(task).then(parseCamaroJson)
         },
+        destroy() {},
     }
 } else {
-    const WorkerPool = require('piscina')
-    const piscina = new WorkerPool({ filename: resolve(__dirname, 'worker.js') })
+    const { LeanPool } = require('./lean-pool')
+    const { parseCamaroJson } = require('./json-parse')
+    const leanPool = new LeanPool(resolve(__dirname, 'pool-worker.js'))
     pool = {
         run(task, opts) {
-            if (opts && opts.transferList && opts.transferList.length > 0) {
-                return piscina.run(task, { transferList: opts.transferList })
-            }
-            return piscina.run(task)
+            return leanPool.run(task, opts).then(parseCamaroJson)
+        },
+        destroy() {
+            return leanPool.destroy()
         },
     }
 }
@@ -27,16 +29,18 @@ if (NODE_MAJOR_VERSION < 12 || process.env.CAMARO_FORCE_SINGLE_THREAD === 'true'
 /** Wasm Embind Utf-16 string → std::string is slower than Utf-8 bytes + malloc; reuse the Utf-8 path. */
 const textEncoderUtf8 =
     typeof TextEncoder !== 'undefined' ? new TextEncoder() : null
+let xmlUtf8Scratch = null
 
 function utf8BytesFromJsString(xml) {
-    return textEncoderUtf8
-        ? textEncoderUtf8.encode(xml)
-        : Buffer.from(xml, 'utf8')
-}
-
-function canTransferUnderlyingBuffer(view) {
-    if (!(view instanceof Uint8Array) || view.byteLength === 0) return false
-    return view.byteOffset === 0 && view.byteLength === view.buffer.byteLength
+    if (!textEncoderUtf8) {
+        return Buffer.from(xml, 'utf8')
+    }
+    const worstCase = xml.length * 3
+    if (!xmlUtf8Scratch || xmlUtf8Scratch.length < worstCase) {
+        xmlUtf8Scratch = new Uint8Array(Math.max(worstCase, 65536))
+    }
+    const { written } = textEncoderUtf8.encodeInto(xml, xmlUtf8Scratch)
+    return xmlUtf8Scratch.subarray(0, written)
 }
 
 /**
@@ -45,16 +49,10 @@ function canTransferUnderlyingBuffer(view) {
  */
 function xmlPayloadForWorkerThread(xml) {
     if (typeof xml === 'string') {
-        const u8 = utf8BytesFromJsString(xml)
-        if (
-            NODE_MAJOR_VERSION >= 12 &&
-            process.env.CAMARO_FORCE_SINGLE_THREAD !== 'true' &&
-            canTransferUnderlyingBuffer(u8)
-        ) {
-            return { xmlWire: u8, poolOpts: { transferList: [u8.buffer] } }
-        }
-        return { xmlWire: u8 }
+        // Reuse scratch + structured clone; transfer detaches and forces re-allocation.
+        return { xmlWire: utf8BytesFromJsString(xml) }
     }
+    // User-supplied binaries: structured clone only (transfer would detach caller's buffer).
     return { xmlWire: xml }
 }
 
@@ -98,6 +96,17 @@ function isEmptyObject(obj) {
     return Object.entries(obj).length === 0 && obj.constructor === Object
 }
 
+const templateStringCache = new WeakMap()
+
+function templateString(template) {
+    let cached = templateStringCache.get(template)
+    if (cached === undefined) {
+        cached = JSON.stringify(template)
+        templateStringCache.set(template, cached)
+    }
+    return cached
+}
+
 /**
  * convert xml to json base on the template object
  * @param {string|Buffer|Uint8Array|ArrayBuffer} xml xml as UTF-8 string or raw bytes
@@ -115,7 +124,7 @@ function transform(xml, template) {
     return dispatchPool(
         {
             fn: 'transform',
-            args: [payload.xmlWire, JSON.stringify(template)],
+            args: [payload.xmlWire, templateString(template)],
         },
         payload.poolOpts,
     )

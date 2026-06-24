@@ -178,3 +178,13 @@ t.test('test function string-join() without delimeter', async (t) => {
     t.equal(joinedString, 'item 1item 2')
     t.end()
 })
+
+t.test('number() is NaN when absent', async (t) => {
+    const result = await transform('<item value="42"/>', {
+        present: 'number(/item/@value)',
+        absent: 'number(/item/@missing)',
+    })
+    t.equal(result.present, 42)
+    t.ok(Number.isNaN(result.absent))
+    t.end()
+})
