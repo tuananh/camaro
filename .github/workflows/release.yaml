@@ -16,6 +16,13 @@ jobs:
          node-version: 'lts/*'
          registry-url: 'https://registry.npmjs.org'
      - run: npm install
-     - run: npm publish --provenance --access public
+     - name: Publish to npm
+       run: |
+         if node -e "process.exit(/-/.test(require('./package.json').version) ? 0 : 1)"; then
+           echo "Prerelease version; publishing with dist-tag: next"
+           npm publish --provenance --access public --tag next
+         else
+           npm publish --provenance --access public
+         fi
        env:
          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
