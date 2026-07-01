@@ -1,9 +1,14 @@
 const { resolve } = require('path')
-const NODE_MAJOR_VERSION = process.versions.node.split('.')[0]
+const { parseCamaroJson } = require('./json-parse')
+
+const forceMainThread = process.env.CAMARO_FORCE_SINGLE_THREAD === 'true'
+const poolSize = Number(process.env.CAMARO_POOL_SIZE || 0)
+const { sabEnabled, fitsSabXmlPayload } = require('./sab-ipc')
+const useSabIpc = sabEnabled() && !forceMainThread
+
 let pool = null
 
-if (NODE_MAJOR_VERSION < 12 || process.env.CAMARO_FORCE_SINGLE_THREAD === 'true') {
-    console.warn('[camaro] worker_threads is not available, expect performance drop. Try using Node version >= 12.')
+if (forceMainThread) {
     const workerFn = require('./worker')
     pool = {
         run(task, opts) {
@@ -14,11 +19,14 @@ if (NODE_MAJOR_VERSION < 12 || process.env.CAMARO_FORCE_SINGLE_THREAD === 'true'
     }
 } else {
     const { LeanPool } = require('./lean-pool')
-    const { parseCamaroJson } = require('./json-parse')
-    const leanPool = new LeanPool(resolve(__dirname, 'pool-worker.js'))
+    const leanPool = new LeanPool(resolve(__dirname, 'pool-worker.js'), {
+        maxThreads: poolSize > 0 ? poolSize : undefined,
+        onRecycleXml: recycleXmlUtf8Buffer,
+        useSab: useSabIpc,
+    })
     pool = {
         run(task, opts) {
-            return leanPool.run(task, opts).then(parseCamaroJson)
+            return leanPool.run(task, opts)
         },
         destroy() {
             return leanPool.destroy()
@@ -29,14 +37,30 @@ if (NODE_MAJOR_VERSION < 12 || process.env.CAMARO_FORCE_SINGLE_THREAD === 'true'
 /** Wasm Embind Utf-16 string → std::string is slower than Utf-8 bytes + malloc; reuse the Utf-8 path. */
 const textEncoderUtf8 =
     typeof TextEncoder !== 'undefined' ? new TextEncoder() : null
+/** Recycled after worker transfers XML buffers back post-transform. */
 let xmlUtf8Scratch = null
+
+function recycleXmlUtf8Buffer(buf) {
+    if (
+        buf instanceof Uint8Array &&
+        buf.buffer &&
+        buf.buffer.byteLength > 0 &&
+        (!xmlUtf8Scratch || buf.byteLength >= xmlUtf8Scratch.byteLength)
+    ) {
+        xmlUtf8Scratch = buf
+    }
+}
 
 function utf8BytesFromJsString(xml) {
     if (!textEncoderUtf8) {
         return Buffer.from(xml, 'utf8')
     }
     const worstCase = xml.length * 3
-    if (!xmlUtf8Scratch || xmlUtf8Scratch.length < worstCase) {
+    if (
+        !xmlUtf8Scratch ||
+        xmlUtf8Scratch.length < worstCase ||
+        xmlUtf8Scratch.buffer.byteLength === 0
+    ) {
         xmlUtf8Scratch = new Uint8Array(Math.max(worstCase, 65536))
     }
     const { written } = textEncoderUtf8.encodeInto(xml, xmlUtf8Scratch)
@@ -49,11 +73,38 @@ function utf8BytesFromJsString(xml) {
  */
 function xmlPayloadForWorkerThread(xml) {
     if (typeof xml === 'string') {
-        // Reuse scratch + structured clone; transfer detaches and forces re-allocation.
-        return { xmlWire: utf8BytesFromJsString(xml) }
+        if (useSabIpc && fitsSabXmlPayload(xml)) {
+            return { sab: true }
+        }
+        const xmlWire = utf8BytesFromJsString(xml)
+        if (!forceMainThread && xmlWire.buffer && xmlWire.buffer.byteLength > 0) {
+            return {
+                xmlWire,
+                poolOpts: { transferList: [xmlWire.buffer] },
+            }
+        }
+        return { xmlWire }
+    }
+    if (useSabIpc && fitsSabXmlPayload(xml)) {
+        return { xmlWire: xml, sab: true }
     }
     // User-supplied binaries: structured clone only (transfer would detach caller's buffer).
     return { xmlWire: xml }
+}
+
+function buildPoolTask(fn, xml, payload, extraArgs = []) {
+    const task = {
+        fn,
+        args: [payload.sab ? null : payload.xmlWire, ...extraArgs],
+        sab: payload.sab,
+        recycleXml: Boolean(payload.poolOpts?.transferList?.length),
+    }
+    if (payload.sab && typeof xml === 'string') {
+        task.xmlString = xml
+    } else if (payload.sab && payload.xmlWire != null) {
+        task.args[0] = payload.xmlWire
+    }
+    return task
 }
 
 function dispatchPool(taskBody, poolOpts) {
@@ -122,10 +173,7 @@ function transform(xml, template) {
 
     const payload = xmlPayloadForWorkerThread(xml)
     return dispatchPool(
-        {
-            fn: 'transform',
-            args: [payload.xmlWire, templateString(template)],
-        },
+        buildPoolTask('transform', xml, payload, [templateString(template)]),
         payload.poolOpts,
     )
 }
@@ -139,7 +187,7 @@ function toJson(xml) {
     validateXml(xml)
 
     const payload = xmlPayloadForWorkerThread(xml)
-    return dispatchPool({ fn: 'toJson', args: [payload.xmlWire] }, payload.poolOpts)
+    return dispatchPool(buildPoolTask('toJson', xml, payload), payload.poolOpts)
 }
 
 /**
@@ -154,7 +202,7 @@ function prettyPrint(xml, opts = { indentSize: 2 }) {
 
     const payload = xmlPayloadForWorkerThread(xml)
     return dispatchPool(
-        { fn: 'prettyPrint', args: [payload.xmlWire, opts] },
+        buildPoolTask('prettyPrint', xml, payload, [opts]),
         payload.poolOpts,
     )
 }

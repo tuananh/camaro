@@ -34,6 +34,7 @@
     "index.mjs",
     "index.d.ts",
     "lean-pool.js",
+    "sab-ipc.js",
     "pool-worker.js",
     "json-parse.js",
     "worker.js",

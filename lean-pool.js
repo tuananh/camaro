@@ -2,6 +2,16 @@
 
 const os = require('os')
 const { Worker } = require('worker_threads')
+const {
+    sabEnabled,
+    createSabChannel,
+    writeBytesToSab,
+    writeStringXmlToSab,
+    readResultFromSab,
+    stripXmlFromTask,
+    CTRL,
+    fnCode,
+} = require('./sab-ipc')
 
 const DEFAULT_MIN_THREADS = 1
 
@@ -21,14 +31,18 @@ function idleTimeoutMs() {
         const n = Number(raw)
         if (Number.isFinite(n) && n >= 0) return n
     }
-    // Match piscina default: shut down idle workers immediately so scripts can exit.
+    // Shut down idle workers so scripts can exit; set CAMARO_IDLE_TIMEOUT=Infinity
+    // to keep workers warm (e.g. long-running servers or throughput benches).
     return 0
 }
 
 class LeanWorker {
-    constructor(filename, idleTimeout) {
+    constructor(filename, idleTimeout, onRecycleXml, useSab) {
         this.filename = filename
         this.idleTimeout = idleTimeout
+        this.onRecycleXml = onRecycleXml
+        this.useSab = useSab
+        this.sabChannel = useSab ? createSabChannel() : null
         this.worker = null
         this.seq = 0
         this.pending = new Map()
@@ -41,14 +55,26 @@ class LeanWorker {
 
     ensureWorker() {
         if (this.worker) return
-        const worker = new Worker(this.filename)
+        const workerOpts =
+            this.sabChannel != null ? { workerData: { sab: this.sabChannel } } : undefined
+        const worker = new Worker(this.filename, workerOpts)
         worker.unref()
-        worker.on('message', ({ id, result, error }) => {
+        worker.on('message', ({ id, result, error, xmlBuf, sab }) => {
+            if (xmlBuf && this.onRecycleXml) this.onRecycleXml(xmlBuf)
             const p = this.pending.get(id)
             this.pending.delete(id)
             if (!p) return
-            if (error) p.reject(new Error(error))
-            else p.resolve(result)
+            if (error) {
+                p.reject(new Error(error))
+            } else if (sab && this.sabChannel) {
+                try {
+                    p.resolve(readResultFromSab(this.sabChannel))
+                } catch (err) {
+                    p.reject(err)
+                }
+            } else {
+                p.resolve(result)
+            }
             if (this.pending.size === 0) this.scheduleIdleShutdown()
         })
         worker.on('error', (err) => {
@@ -83,6 +109,29 @@ class LeanWorker {
         this.ensureWorker()
         this.clearIdleTimer()
         const id = ++this.seq
+
+        if (task.sab && this.sabChannel) {
+            try {
+                if (typeof task.xmlString === 'string') {
+                    writeStringXmlToSab(this.sabChannel, task.xmlString)
+                } else {
+                    writeBytesToSab(this.sabChannel, task.args[0])
+                }
+                Atomics.store(this.sabChannel.control, CTRL.REQUEST_ID, id)
+                Atomics.store(this.sabChannel.control, CTRL.FN, fnCode(task.fn))
+            } catch (err) {
+                return Promise.reject(err)
+            }
+            return new Promise((resolve, reject) => {
+                this.pending.set(id, { resolve, reject })
+                this.worker.postMessage({
+                    id,
+                    sab: true,
+                    task: stripXmlFromTask(task),
+                })
+            })
+        }
+
         return new Promise((resolve, reject) => {
             this.pending.set(id, { resolve, reject })
             this.worker.postMessage({ id, task }, opts.transferList || [])
@@ -103,22 +152,37 @@ class LeanWorker {
 }
 
 class LeanPool {
-    constructor(filename, maxThreads) {
+    constructor(filename, opts = {}) {
+        const maxThreads = opts.maxThreads
         const envSize = Number(process.env.CAMARO_POOL_SIZE || 0)
         this.filename = filename
         this.idleTimeout = idleTimeoutMs()
+        this.onRecycleXml = opts.onRecycleXml
+        this.useSab = opts.useSab != null ? opts.useSab : sabEnabled()
         this.maxThreads =
             maxThreads || (envSize > 0 ? envSize : defaultMaxThreads())
         this.workers = []
         this.queue = []
         for (let i = 0; i < Math.min(DEFAULT_MIN_THREADS, this.maxThreads); i++) {
-            const worker = new LeanWorker(this.filename, this.idleTimeout)
+            const worker = new LeanWorker(
+                this.filename,
+                this.idleTimeout,
+                this.onRecycleXml,
+                this.useSab,
+            )
             worker.ensureWorker()
             this.workers.push(worker)
         }
     }
 
     run(task, opts = {}) {
+        if (this.queue.length === 0) {
+            for (const worker of this.workers) {
+                if (worker.pendingCount === 0) {
+                    return worker.run(task, opts)
+                }
+            }
+        }
         return new Promise((resolve, reject) => {
             this.queue.push({ task, opts, resolve, reject })
             this.drain()
@@ -129,7 +193,12 @@ class LeanPool {
         while (this.queue.length > 0) {
             let worker = this.workers.find((w) => w.pendingCount === 0)
             if (!worker && this.workers.length < this.maxThreads) {
-                worker = new LeanWorker(this.filename, this.idleTimeout)
+                worker = new LeanWorker(
+                    this.filename,
+                    this.idleTimeout,
+                    this.onRecycleXml,
+                    this.useSab,
+                )
                 this.workers.push(worker)
             }
             if (!worker) break
