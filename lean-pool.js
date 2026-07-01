@@ -1,6 +1,18 @@
 'use strict'
 
+const os = require('os')
 const { Worker } = require('worker_threads')
+
+const DEFAULT_MIN_THREADS = 1
+
+function defaultMaxThreads() {
+    const cpus =
+        typeof os.availableParallelism === 'function'
+            ? os.availableParallelism()
+            : os.cpus().length
+    // Match piscina default maxThreads (availableParallelism * 1.5).
+    return Math.max(Math.ceil(cpus * 1.5), 1)
+}
 
 function idleTimeoutMs() {
     const raw = process.env.CAMARO_IDLE_TIMEOUT
@@ -21,6 +33,10 @@ class LeanWorker {
         this.seq = 0
         this.pending = new Map()
         this.idleTimer = null
+    }
+
+    get pendingCount() {
+        return this.pending.size
     }
 
     ensureWorker() {
@@ -87,20 +103,43 @@ class LeanWorker {
 }
 
 class LeanPool {
-    constructor(filename, size) {
+    constructor(filename, maxThreads) {
         const envSize = Number(process.env.CAMARO_POOL_SIZE || 0)
-        const poolSize = size || (envSize > 0 ? envSize : 1)
-        const idleTimeout = idleTimeoutMs()
-        this.workers = Array.from(
-            { length: poolSize },
-            () => new LeanWorker(filename, idleTimeout),
-        )
-        this.next = 0
+        this.filename = filename
+        this.idleTimeout = idleTimeoutMs()
+        this.maxThreads =
+            maxThreads || (envSize > 0 ? envSize : defaultMaxThreads())
+        this.workers = []
+        this.queue = []
+        for (let i = 0; i < Math.min(DEFAULT_MIN_THREADS, this.maxThreads); i++) {
+            const worker = new LeanWorker(this.filename, this.idleTimeout)
+            worker.ensureWorker()
+            this.workers.push(worker)
+        }
     }
 
-    run(task, opts) {
-        const worker = this.workers[this.next++ % this.workers.length]
-        return worker.run(task, opts)
+    run(task, opts = {}) {
+        return new Promise((resolve, reject) => {
+            this.queue.push({ task, opts, resolve, reject })
+            this.drain()
+        })
+    }
+
+    drain() {
+        while (this.queue.length > 0) {
+            let worker = this.workers.find((w) => w.pendingCount === 0)
+            if (!worker && this.workers.length < this.maxThreads) {
+                worker = new LeanWorker(this.filename, this.idleTimeout)
+                this.workers.push(worker)
+            }
+            if (!worker) break
+
+            const job = this.queue.shift()
+            worker
+                .run(job.task, job.opts)
+                .then(job.resolve, job.reject)
+                .finally(() => this.drain())
+        }
     }
 
     destroy() {
