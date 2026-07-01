@@ -31,13 +31,15 @@ echo "2/2 Compiling camaro wasm bindings"
     -s 'EXPORTED_RUNTIME_METHODS=[HEAPU8]' \
     -s 'ALLOW_MEMORY_GROWTH=1' \
     -I node_modules/pugixml/src \
-    -I node_modules/json/single_include/nlohmann \
+    -I src \
     -o dist/camaro.js \
     -Wno-deprecated-register \
     -Wno-writable-strings \
     --closure 1 \
     dist/*.o \
-    src/camaro.cpp
+    src/camaro.cpp \
+    src/json_writer.cpp \
+    src/template_parser.cpp
 )
 
 echo "DONE!"

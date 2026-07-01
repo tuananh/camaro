@@ -57,9 +57,7 @@
   "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
   "license": "MIT",
   "napa": {
-    "pugixml": "tuananh/pugixml#2e2283336364c2a55e07b6384334f64a09f3f8b0",
-    "json": "nlohmann/json#v3.12.0",
-    "fifo_map": "nlohmann/fifo_map#v1.0.1"
+    "pugixml": "tuananh/pugixml#2e2283336364c2a55e07b6384334f64a09f3f8b0"
   },
   "napa-config": {
     "cache": false

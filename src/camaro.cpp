@@ -1,8 +1,9 @@
-#include "../node_modules/fifo_map/src/fifo_map.hpp"
-#include "../node_modules/json/single_include/nlohmann/json.hpp"
 #include "../node_modules/pugixml/src/pugixml.hpp"
+#include "json_writer.hpp"
+#include "template_value.hpp"
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
 #include <memory>
@@ -12,14 +13,6 @@
 
 using namespace emscripten;
 using string = std::string;
-
-// See https://github.com/nlohmann/json#notes
-// See https://github.com/nlohmann/json/issues/485#issuecomment-333652309
-// A workaround to use fifo_map as map, we are just ignoring the 'less' compare
-template <class K, class V, class dummy_compare, class A>
-using my_workaround_fifo_map =
-    nlohmann::fifo_map<K, V, nlohmann::fifo_map_compare<K>, A>;
-using json = nlohmann::basic_json<my_workaround_fifo_map>;
 
 /// Compiling XPath is expensive; expressions repeat across many matched nodes.
 class XpathCache {
@@ -39,7 +32,7 @@ public:
 
 /// Parsed transform templates repeat across calls; cache by string key.
 struct TemplateEntry {
-  json parsed;
+  TemplateValue parsed;
   XpathCache xpath;
 };
 
@@ -51,43 +44,228 @@ public:
     auto it = map_.find(tmpl);
     if (it != map_.end())
       return it->second;
-    auto ins = map_.emplace(tmpl, TemplateEntry{json::parse(tmpl), {}});
+    auto ins =
+        map_.emplace(tmpl, TemplateEntry{TemplateValue::parse(tmpl), {}});
     return ins.first->second;
   }
 };
 
 enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
 
-template <typename T>
-void walk(T &doc, const json &n, json &output, const string &key, XpathCache &xc,
-          bool &has_nan);
+/// parse_escapes for entities; skip parse_eol / parse_wconv_attribute (see
+/// pugixml #284).
+static constexpr unsigned int kParseOpts =
+    pugi::parse_cdata | pugi::parse_escapes;
+
+inline pugi::xml_node context_node(pugi::xml_node &n) { return n; }
+inline pugi::xml_node context_node(const pugi::xml_node &n) { return n; }
+inline pugi::xml_node context_node(pugi::xml_document &d) { return d; }
+inline pugi::xml_node context_node(const pugi::xml_document &d) { return d; }
+inline pugi::xml_node context_node(pugi::xpath_node &n) { return n.node(); }
+inline pugi::xml_node context_node(const pugi::xpath_node &n) {
+  return n.node();
+}
 
 inline bool start_with(const string &to_check, const string &prefix) {
   return to_check.rfind(prefix, 0) == 0;
 }
 
-/// JSON has no NaN; number() uses a sentinel restored by parse reviver when needed.
-static constexpr const char kNanSentinel[] = "__camaro_nan__";
-
-static json json_from_number(double n, bool &has_nan) {
-  if (std::isnan(n)) {
-    has_nan = true;
-    return json(kNanSentinel);
-  }
-  return n;
+inline bool needs_full_xpath(const string &path) {
+  if (path.empty())
+    return false;
+  if (path[0] == '#')
+    return false;
+  if (path.find('(') != string::npos)
+    return true;
+  if (path.find('[') != string::npos)
+    return true;
+  if (path.find("//") != string::npos)
+    return true;
+  return false;
 }
 
-/// Serialize once; worker thread parses with native V8 JSON.parse.
-static string json_to_string(const json &j) { return j.dump(); }
+inline bool is_simple_nav_path(const string &path) {
+  if (path.empty() || path.find("//") != string::npos)
+    return false;
+  for (char c : path) {
+    if (std::isalnum(static_cast<unsigned char>(c)) || c == '/' || c == '@' ||
+        c == '_' || c == '-')
+      continue;
+    return false;
+  }
+  return true;
+}
 
-static val json_to_val(const json &j, bool has_nan) {
-  const string s = json_to_string(j);
-  static const val JSON = val::global("JSON");
-  if (!has_nan)
-    return JSON.call<val>("parse", val(s));
-  static const val REVIVER = val::global("Function").new_(
-      val(string("_,v")), val(string("return v===\"__camaro_nan__\"?NaN:v")));
-  return JSON.call<val>("parse", val(s), REVIVER);
+inline bool xpath_path_absolute(const string &path) {
+  return !path.empty() && path[0] == '/';
+}
+
+/// Walk Name/Name/@attr paths without compiling XPath.
+static pugi::xml_node follow_path(pugi::xml_node ctx, const char *path,
+                                  bool absolute) {
+  if (!ctx)
+    return pugi::xml_node();
+  const char *p = path;
+  if (absolute && *p == '/')
+    ++p;
+  while (*p) {
+    const char *start = p;
+    while (*p && *p != '/')
+      ++p;
+    if (p > start) {
+      ctx =
+          ctx.child(pugi::string_view_t(start, static_cast<size_t>(p - start)));
+      if (!ctx)
+        return pugi::xml_node();
+    }
+    if (*p == '/')
+      ++p;
+  }
+  return ctx;
+}
+
+static string follow_path_string(pugi::xml_node ctx, const string &path,
+                                 bool absolute) {
+  const size_t at_pos = path.rfind("/@");
+  if (at_pos != string::npos) {
+    const string elem = path.substr(0, at_pos);
+    const string attr = path.substr(at_pos + 2);
+    pugi::xml_node n = follow_path(ctx, elem.c_str(), absolute);
+    if (!n)
+      return "";
+    pugi::xml_attribute a = n.attribute(attr.c_str());
+    return a ? string(a.value()) : "";
+  }
+  pugi::xml_node n = follow_path(ctx, path.c_str(), absolute);
+  return n ? string(n.child_value()) : "";
+}
+
+static double follow_path_number(pugi::xml_node ctx, const string &path,
+                                 bool absolute) {
+  const size_t at_pos = path.rfind("/@");
+  if (at_pos != string::npos) {
+    const string elem = path.substr(0, at_pos);
+    const string attr = path.substr(at_pos + 2);
+    pugi::xml_node n = follow_path(ctx, elem.c_str(), absolute);
+    if (!n)
+      return std::nan("");
+    pugi::xml_attribute a = n.attribute(attr.c_str());
+    return a ? a.as_double() : std::nan("");
+  }
+  pugi::xml_node n = follow_path(ctx, path.c_str(), absolute);
+  return n ? n.text().as_double() : std::nan("");
+}
+
+static bool fast_boolean_eq(pugi::xml_node ctx, const string &path,
+                            const string &expected) {
+  pugi::xml_node n = follow_path(ctx, path.c_str(), false);
+  if (!n)
+    return false;
+  return string(n.child_value()) == expected;
+}
+
+static bool try_fast_boolean(pugi::xml_node ctx, const string &path,
+                             bool &out) {
+  if (!start_with(path, "boolean(") || path.size() < 10 || path.back() != ')')
+    return false;
+  const string inner = path.substr(8, path.size() - 9);
+  const size_t eq = inner.find('=');
+  if (eq == string::npos)
+    return false;
+  string left = inner.substr(0, eq);
+  string right = inner.substr(eq + 1);
+  const auto trim = [](string &s) {
+    const size_t start = s.find_first_not_of(" \t");
+    if (start == string::npos) {
+      s.clear();
+      return;
+    }
+    const size_t end = s.find_last_not_of(" \t");
+    s = s.substr(start, end - start + 1);
+  };
+  trim(left);
+  trim(right);
+  if (right.size() >= 2 && ((right.front() == '"' && right.back() == '"') ||
+                            (right.front() == '\'' && right.back() == '\''))) {
+    right = right.substr(1, right.size() - 2);
+  }
+  if (left.find('(') != string::npos || left.find('/') != string::npos ||
+      left.find('@') != string::npos)
+    return false;
+  out = fast_boolean_eq(ctx, left, right);
+  return true;
+}
+
+static bool try_fast_number(pugi::xml_node ctx, const string &path,
+                            double &out) {
+  if (!start_with(path, "number(") || path.size() < 9 || path.back() != ')')
+    return false;
+  const string inner = path.substr(7, path.size() - 8);
+  if (!is_simple_nav_path(inner))
+    return false;
+  out = follow_path_number(ctx, inner, xpath_path_absolute(inner));
+  return true;
+}
+
+static void collect_path_nodes(pugi::xml_node ctx, const string &path,
+                               std::vector<pugi::xpath_node> &out) {
+  const size_t slash = path.rfind('/');
+  if (slash == string::npos) {
+    for (pugi::xml_node c = ctx.child(path.c_str()); c;
+         c = c.next_sibling(path.c_str()))
+      out.emplace_back(c);
+    return;
+  }
+  const string parent_path = path.substr(0, slash);
+  const char *child_name = path.c_str() + slash + 1;
+  pugi::xml_node parent = follow_path(ctx, parent_path.c_str(), false);
+  if (!parent)
+    return;
+  for (pugi::xml_node c = parent.child(child_name); c;
+       c = c.next_sibling(child_name))
+    out.emplace_back(c);
+}
+
+static bool is_simple_descendant_name(const string &path, string &name_out) {
+  if (path.size() < 3 || path[0] != '/' || path[1] != '/')
+    return false;
+  if (path.find('/', 2) != string::npos)
+    return false;
+  const string name = path.substr(2);
+  if (!is_simple_nav_path(name))
+    return false;
+  name_out = name;
+  return true;
+}
+
+static void collect_descendants_by_name(pugi::xml_node root, const char *name,
+                                        std::vector<pugi::xpath_node> &out) {
+  if (!root)
+    return;
+  if (root.type() == pugi::node_element && std::strcmp(root.name(), name) == 0)
+    out.emplace_back(root);
+  for (pugi::xml_node c = root.first_child(); c; c = c.next_sibling())
+    collect_descendants_by_name(c, name, out);
+}
+
+template <typename T>
+static void collect_array_nodes(pugi::xml_node ctx, const string &base_path,
+                                std::vector<pugi::xpath_node> &out,
+                                XpathCache &xc, T &xpath_ctx) {
+  string desc_name;
+  if (is_simple_descendant_name(base_path, desc_name)) {
+    collect_descendants_by_name(ctx, desc_name.c_str(), out);
+    return;
+  }
+  if (is_simple_nav_path(base_path)) {
+    collect_path_nodes(ctx, base_path, out);
+    return;
+  }
+  pugi::xpath_node_set nodes =
+      xc.query_for(base_path).evaluate_node_set(xpath_ctx);
+  out.reserve(nodes.size());
+  for (size_t i = 0; i < nodes.size(); ++i)
+    out.push_back(nodes[i]);
 }
 
 ReturnType get_return_type(const string &path) {
@@ -134,95 +312,104 @@ ReturnType get_return_type(const string &path) {
   return t;
 }
 
-template <typename T> bool query_boolean(T &xnode, const json &j, XpathCache &xc) {
-  const string &path = j.get_ref<const string &>();
+template <typename T>
+bool query_boolean(T &xnode, const TemplateValue &v, XpathCache &xc) {
+  const string &path = v.as_string();
+  bool out = false;
+  if (try_fast_boolean(context_node(xnode), path, out))
+    return out;
   return xc.query_for(path).evaluate_boolean(xnode);
 }
 
-template <typename T> string query_string(T &xnode, const json &j, XpathCache &xc) {
-  const string &path = j.get_ref<const string &>();
+template <typename T>
+string query_string(T &xnode, const TemplateValue &v, XpathCache &xc) {
+  const string &path = v.as_string();
   if (!path.empty() && path[0] == '#') {
     return path.substr(1);
+  }
+  if (is_simple_nav_path(path)) {
+    return follow_path_string(context_node(xnode), path,
+                              xpath_path_absolute(path));
   }
   return xc.query_for(path).evaluate_string(xnode);
 }
 
-template <typename T> double query_number(T &xnode, const json &j, XpathCache &xc) {
-  const string &path = j.get_ref<const string &>();
+template <typename T>
+double query_number(T &xnode, const TemplateValue &v, XpathCache &xc) {
+  const string &path = v.as_string();
+  double out = 0;
+  if (try_fast_number(context_node(xnode), path, out))
+    return out;
   return xc.query_for(path).evaluate_number(xnode);
 }
 
-template <typename T> json query_array(T &doc, const json &node, XpathCache &xc,
-                                       bool &has_nan) {
-  json arr = json::array();
+template <typename T>
+void write_value(T &ctx, JsonWriter &w, const TemplateValue &n, XpathCache &xc,
+                 bool &has_nan);
 
-  // a special case for backward compatible with xpath-object-transform
+template <typename T>
+void query_array_w(JsonWriter &w, T &doc, const TemplateValue &node,
+                   XpathCache &xc, bool &has_nan) {
+  w.begin_array();
   if (node.empty()) {
-    return arr;
+    w.end_array();
+    return;
   }
 
-  const string &base_path = node[0].get_ref<const string &>();
-  pugi::xpath_node_set nodes =
-      xc.query_for(base_path).evaluate_node_set(doc);
+  const string &base_path = node.items[0].as_string();
+  const TemplateValue &inner_template = node.items[1];
 
-  const json &inner_template = node[1];
-  for (size_t i = 0; i < nodes.size(); ++i) {
-    pugi::xpath_node n = nodes[i];
+  std::vector<pugi::xpath_node> nodes;
+  nodes.reserve(32);
+  collect_array_nodes(context_node(doc), base_path, nodes, xc, doc);
 
+  for (pugi::xpath_node n : nodes) {
     if (inner_template.is_object()) {
-      json obj = json::object();
-      for (json::const_iterator it = inner_template.begin();
-           it != inner_template.end(); ++it) {
-        walk(n, it.value(), obj, it.key(), xc, has_nan);
+      w.begin_object();
+      for (const auto &member : inner_template.members) {
+        w.write_key(member.first);
+        write_value(n, w, member.second, xc, has_nan);
       }
-      arr.push_back(std::move(obj));
+      w.end_object();
     } else if (inner_template.is_string()) {
-      const string &path = inner_template.get_ref<const string &>();
+      const string &path = inner_template.as_string();
       ReturnType type = get_return_type(path);
       if (type == T_STRING) {
-        arr.push_back(query_string(n, inner_template, xc));
+        w.write_string(query_string(n, inner_template, xc));
       } else if (type == T_NUMBER) {
-        arr.push_back(
-            json_from_number(query_number(n, inner_template, xc), has_nan));
+        w.write_number(query_number(n, inner_template, xc), has_nan);
       } else if (type == T_BOOLEAN) {
-        arr.push_back(query_boolean(n, inner_template, xc));
+        w.write_bool(query_boolean(n, inner_template, xc));
       }
     }
   }
-
-  return arr;
-}
-
-template <typename T> json query_object(T &doc, const json &node, XpathCache &xc,
-                                        bool &has_nan) {
-  json out = json::object();
-
-  for (json::const_iterator it = node.begin(); it != node.end(); ++it) {
-    walk(doc, it.value(), out, it.key(), xc, has_nan);
-  }
-
-  return out;
+  w.end_array();
 }
 
 template <typename T>
-void walk(T &doc, const json &n, json &output, const string &key, XpathCache &xc,
-          bool &has_nan) {
+void write_value(T &ctx, JsonWriter &w, const TemplateValue &n, XpathCache &xc,
+                 bool &has_nan) {
   if (n.is_array()) {
-    output[key] = query_array(doc, n, xc, has_nan);
+    query_array_w(w, ctx, n, xc, has_nan);
   } else if (n.is_object()) {
-    output[key] = query_object(doc, n, xc, has_nan);
+    w.begin_object();
+    for (const auto &member : n.members) {
+      w.write_key(member.first);
+      write_value(ctx, w, member.second, xc, has_nan);
+    }
+    w.end_object();
   } else if (n.is_string()) {
-    const string &path = n.get_ref<const string &>();
+    const string &path = n.as_string();
     if (path.empty()) {
-      output[key] = "";
+      w.write_empty_string();
     } else {
       ReturnType type = get_return_type(path);
       if (type == T_NUMBER) {
-        output[key] = json_from_number(query_number(doc, n, xc), has_nan);
+        w.write_number(query_number(ctx, n, xc), has_nan);
       } else if (type == T_STRING) {
-        output[key] = query_string(doc, n, xc);
+        w.write_string(query_string(ctx, n, xc));
       } else if (type == T_BOOLEAN) {
-        output[key] = query_boolean(doc, n, xc);
+        w.write_bool(query_boolean(ctx, n, xc));
       }
     }
   }
@@ -231,41 +418,48 @@ void walk(T &doc, const json &n, json &output, const string &key, XpathCache &xc
 static val transform_loaded_doc(pugi::xml_document &doc,
                                 const std::string &json_template) {
   static JsonTemplateCache template_cache;
-  TemplateEntry &te = template_cache.entry(json_template);
-  const json &j = te.parsed;
-  XpathCache &xc = te.xpath;
-  json out;
-  bool has_nan = false;
+  try {
+    TemplateEntry &te = template_cache.entry(json_template);
+    const TemplateValue &j = te.parsed;
+    XpathCache &xc = te.xpath;
+    JsonWriter w;
+    w.reserve(32768);
+    bool has_nan = false;
 
-  if (j.is_array()) {
-    out = query_array(doc, j, xc, has_nan);
-  } else {
-    out = json::object();
-    for (json::const_iterator it = j.begin(); it != j.end(); ++it) {
-      walk(doc, it.value(), out, it.key(), xc, has_nan);
+    if (j.is_array()) {
+      query_array_w(w, doc, j, xc, has_nan);
+    } else {
+      w.begin_object();
+      for (const auto &member : j.members) {
+        w.write_key(member.first);
+        write_value(doc, w, member.second, xc, has_nan);
+      }
+      w.end_object();
     }
+    if (!has_nan)
+      return val(w.buf);
+    val result = val::object();
+    result.set("json", w.buf);
+    result.set("hasNan", true);
+    return result;
+  } catch (const std::exception &) {
+    return val::object();
   }
-  if (!has_nan)
-    return val(json_to_string(out));
-  val result = val::object();
-  result.set("json", json_to_string(out));
-  result.set("hasNan", true);
-  return result;
 }
 
 val transform(string xml, string json_template) {
   pugi::xml_document doc;
-  if (!doc.load_string(xml.c_str()))
+  if (!doc.load_string(xml.c_str(), kParseOpts))
     return val::object();
   return transform_loaded_doc(doc, json_template);
 }
 
 val transform_from_utf8(std::uintptr_t xml_ptr, size_t xml_len,
-                          string json_template) {
+                        string json_template) {
   auto *p = reinterpret_cast<char *>(xml_ptr);
-  pugi::xml_document doc;
+  static pugi::xml_document doc;
   // Buffer is nul-terminated in worker; parse in-place to skip pugixml's copy.
-  if (!doc.load_buffer_inplace(p, xml_len + 1, pugi::parse_default,
+  if (!doc.load_buffer_inplace(p, xml_len + 1, kParseOpts,
                                pugi::encoding_utf8)) {
     return val::object();
   }
@@ -283,49 +477,77 @@ static string trim_xml_text(const char *s) {
   return str.substr(start, end - start + 1);
 }
 
-static void merge_child_json(json &parent, const string &key, json child) {
-  if (!parent.contains(key)) {
-    parent[key] = std::move(child);
-    return;
-  }
-  json &existing = parent[key];
-  if (existing.is_array()) {
-    existing.push_back(std::move(child));
-  } else {
-    json arr = json::array();
-    arr.push_back(std::move(existing));
-    arr.push_back(std::move(child));
-    parent[key] = std::move(arr);
-  }
-}
-
-static json simplify_json(const json &v) {
-  if (v.is_array()) {
-    json out = json::array();
-    for (const auto &el : v)
-      out.push_back(simplify_json(el));
-    return out;
-  }
-  if (!v.is_object())
-    return v;
-
-  json out = json::object();
-  for (json::const_iterator it = v.begin(); it != v.end(); ++it)
-    out[it.key()] = simplify_json(it.value());
-
-  if (out.size() == 1 && out.contains("_text"))
-    return out["_text"];
-  return out;
-}
-
-/// Built in-memory with stable pointers; folded to json once (duplicate sibling
-/// names merge into arrays without invalidating parent references).
+/// Built in-memory with stable pointers; serialized with JsonWriter once.
 struct XmlElemBuilder {
-  json attrs = json::object();
-  bool has_attrs = false;
+  std::vector<std::pair<string, string>> attrs;
   string text;
   std::vector<std::pair<string, std::unique_ptr<XmlElemBuilder>>> children;
 };
+
+struct ChildGroup {
+  string name;
+  std::vector<const XmlElemBuilder *> elems;
+};
+
+static std::vector<ChildGroup> group_children(const XmlElemBuilder &parent) {
+  std::vector<ChildGroup> groups;
+  std::unordered_map<string, size_t> index;
+  for (const auto &kv : parent.children) {
+    const auto it = index.find(kv.first);
+    if (it == index.end()) {
+      index.emplace(kv.first, groups.size());
+      groups.push_back({kv.first, {kv.second.get()}});
+    } else {
+      groups[it->second].elems.push_back(kv.second.get());
+    }
+  }
+  return groups;
+}
+
+static void write_elem_value(JsonWriter &w, const XmlElemBuilder &n) {
+  const bool has_attrs = !n.attrs.empty();
+  const bool has_text = !n.text.empty();
+  const bool has_children = !n.children.empty();
+
+  if (!has_attrs && !has_children && has_text) {
+    w.write_string(n.text);
+    return;
+  }
+  if (!has_attrs && !has_children && !has_text) {
+    w.begin_object();
+    w.end_object();
+    return;
+  }
+
+  w.begin_object();
+  if (has_attrs) {
+    w.write_key("$");
+    w.begin_object();
+    for (const auto &a : n.attrs) {
+      w.write_key(a.first);
+      w.write_string(a.second);
+    }
+    w.end_object();
+  }
+
+  for (const auto &g : group_children(n)) {
+    w.write_key(g.name);
+    if (g.elems.size() == 1) {
+      write_elem_value(w, *g.elems[0]);
+    } else {
+      w.begin_array();
+      for (const XmlElemBuilder *e : g.elems)
+        write_elem_value(w, *e);
+      w.end_array();
+    }
+  }
+
+  if (has_text) {
+    w.write_key("_text");
+    w.write_string(n.text);
+  }
+  w.end_object();
+}
 
 static void append_text_builder(XmlElemBuilder &elem, const string &chunk) {
   if (chunk.empty())
@@ -334,26 +556,6 @@ static void append_text_builder(XmlElemBuilder &elem, const string &chunk) {
     elem.text = chunk;
   else
     elem.text += chunk;
-}
-
-static void append_text_json(json &elem, const string &chunk) {
-  if (chunk.empty())
-    return;
-  if (!elem.contains("_text"))
-    elem["_text"] = chunk;
-  else
-    elem["_text"] = elem["_text"].get_ref<const string &>() + chunk;
-}
-
-static json fold_builder(const XmlElemBuilder &n) {
-  json elem = json::object();
-  if (n.has_attrs)
-    elem["$"] = n.attrs;
-  for (const auto &kv : n.children)
-    merge_child_json(elem, kv.first, fold_builder(*kv.second));
-  if (!n.text.empty())
-    append_text_json(elem, n.text);
-  return elem;
 }
 
 struct json_tree_walker : pugi::xml_tree_walker {
@@ -368,10 +570,8 @@ struct json_tree_walker : pugi::xml_tree_walker {
         stack.pop_back();
 
       auto elem = std::make_unique<XmlElemBuilder>();
-      for (pugi::xml_attribute a : node.attributes()) {
-        elem->has_attrs = true;
-        elem->attrs[string(a.name())] = string(a.value());
-      }
+      for (pugi::xml_attribute a : node.attributes())
+        elem->attrs.emplace_back(string(a.name()), string(a.value()));
 
       XmlElemBuilder *parent = d == 0 ? &synthetic_root : stack[d - 1];
       const string ename(node.name());
@@ -400,15 +600,27 @@ struct json_tree_walker : pugi::xml_tree_walker {
 static val to_json_loaded_doc(pugi::xml_document &doc) {
   json_tree_walker walker;
   doc.traverse(walker);
-  json output = json::object();
-  for (const auto &kv : walker.synthetic_root.children)
-    merge_child_json(output, kv.first, fold_builder(*kv.second));
-  return json_to_val(simplify_json(output), false);
+  JsonWriter w;
+  w.reserve(32768);
+  w.begin_object();
+  for (const auto &g : group_children(walker.synthetic_root)) {
+    w.write_key(g.name);
+    if (g.elems.size() == 1) {
+      write_elem_value(w, *g.elems[0]);
+    } else {
+      w.begin_array();
+      for (const XmlElemBuilder *e : g.elems)
+        write_elem_value(w, *e);
+      w.end_array();
+    }
+  }
+  w.end_object();
+  return val(w.buf);
 }
 
 val to_json(string xml) {
   pugi::xml_document doc;
-  if (!doc.load_string(xml.c_str()))
+  if (!doc.load_string(xml.c_str(), kParseOpts))
     return val::object();
 
   return to_json_loaded_doc(doc);
@@ -417,8 +629,7 @@ val to_json(string xml) {
 val to_json_from_utf8(std::uintptr_t xml_ptr, size_t xml_len) {
   auto *p = reinterpret_cast<const char *>(xml_ptr);
   pugi::xml_document doc;
-  if (!doc.load_buffer(p, xml_len, pugi::parse_default,
-                       pugi::encoding_utf8)) {
+  if (!doc.load_buffer(p, xml_len, kParseOpts, pugi::encoding_utf8)) {
     return val::object();
   }
   return to_json_loaded_doc(doc);
@@ -442,15 +653,14 @@ static void pretty_print_into_writer(const pugi::xml_document &doc,
                                      xml_string_writer &writer,
                                      const PrettyPrintOpts &opts) {
   std::string indent(opts.indent_size, ' ');
-  doc.print(writer, indent.c_str(), pugi::format_default,
-            pugi::encoding_utf8);
+  doc.print(writer, indent.c_str(), pugi::format_default, pugi::encoding_utf8);
 }
 
 string pretty_print(string xml, PrettyPrintOpts opts) {
   pugi::xml_document doc;
   xml_string_writer writer;
 
-  if (doc.load_string(xml.c_str()))
+  if (doc.load_string(xml.c_str(), kParseOpts))
     pretty_print_into_writer(doc, writer, opts);
 
   return writer.result;
@@ -462,8 +672,7 @@ string pretty_print_from_utf8(std::uintptr_t xml_ptr, size_t xml_len,
   pugi::xml_document doc;
   xml_string_writer writer;
 
-  if (doc.load_buffer(p, xml_len, pugi::parse_default,
-                      pugi::encoding_utf8)) {
+  if (doc.load_buffer(p, xml_len, kParseOpts, pugi::encoding_utf8)) {
     pretty_print_into_writer(doc, writer, opts);
   }
 
