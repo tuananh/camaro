@@ -126,6 +126,13 @@ static pugi::xml_node follow_path(pugi::xml_node ctx, const char *path,
 
 static string follow_path_string(pugi::xml_node ctx, const string &path,
                                  bool absolute) {
+  // Bare @attr selects an attribute on the context node.
+  if (!path.empty() && path[0] == '@') {
+    if (!ctx)
+      return "";
+    pugi::xml_attribute a = ctx.attribute(path.c_str() + 1);
+    return a ? string(a.value()) : "";
+  }
   const size_t at_pos = path.rfind("/@");
   if (at_pos != string::npos) {
     const string elem = path.substr(0, at_pos);
@@ -142,6 +149,13 @@ static string follow_path_string(pugi::xml_node ctx, const string &path,
 
 static double follow_path_number(pugi::xml_node ctx, const string &path,
                                  bool absolute) {
+  // Bare @attr selects an attribute on the context node.
+  if (!path.empty() && path[0] == '@') {
+    if (!ctx)
+      return std::nan("");
+    pugi::xml_attribute a = ctx.attribute(path.c_str() + 1);
+    return a ? a.as_double() : std::nan("");
+  }
   const size_t at_pos = path.rfind("/@");
   if (at_pos != string::npos) {
     const string elem = path.substr(0, at_pos);
