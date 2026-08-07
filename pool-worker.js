@@ -7,7 +7,7 @@ const { CTRL, STATE, writeResultToSab } = require('./sab-ipc')
 
 const sabChannel = workerData && workerData.sab ? workerData.sab : null
 
-parentPort.on('message', async ({ id, task, sab: useSab }) => {
+parentPort.on('message', async ({ id, task, sab: useSab, waitForSab }) => {
     try {
         if (useSab && sabChannel) {
             const xmlLen = Atomics.load(sabChannel.control, CTRL.XML_LEN)
@@ -18,9 +18,17 @@ parentPort.on('message', async ({ id, task, sab: useSab }) => {
 
             Atomics.store(sabChannel.control, CTRL.STATE, STATE.BUSY)
             const raw = await workerFn(localTask)
-            writeResultToSab(sabChannel, raw)
+            if (waitForSab) {
+                writeResultToSab(sabChannel, raw)
+                Atomics.store(sabChannel.control, CTRL.STATE, STATE.DONE)
+                Atomics.notify(sabChannel.control, CTRL.STATE, 1)
+                return
+            }
             Atomics.store(sabChannel.control, CTRL.STATE, STATE.DONE)
-            parentPort.postMessage({ id, sab: true })
+            // JSON strings are cheaply cloned by V8. Avoiding the explicit
+            // UTF-8 encode into SAB and decode on the parent removes two
+            // copies from the latency-sensitive single-request path.
+            parentPort.postMessage({ id, raw: true, result: raw })
             return
         }
 
@@ -43,6 +51,7 @@ parentPort.on('message', async ({ id, task, sab: useSab }) => {
     } catch (err) {
         if (useSab && sabChannel) {
             Atomics.store(sabChannel.control, CTRL.STATE, STATE.ERROR)
+            Atomics.notify(sabChannel.control, CTRL.STATE, 1)
         }
         parentPort.postMessage({
             id,

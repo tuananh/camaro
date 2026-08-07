@@ -2,6 +2,7 @@
 
 const os = require('os')
 const { Worker } = require('worker_threads')
+const { parseCamaroJson } = require('./json-parse')
 const {
     sabEnabled,
     createSabChannel,
@@ -10,6 +11,7 @@ const {
     readResultFromSab,
     stripXmlFromTask,
     CTRL,
+    STATE,
     fnCode,
 } = require('./sab-ipc')
 
@@ -42,6 +44,10 @@ class LeanWorker {
         this.idleTimeout = idleTimeout
         this.onRecycleXml = onRecycleXml
         this.useSab = useSab
+        this.useSabWait =
+            useSab &&
+            typeof Atomics.waitAsync === 'function' &&
+            typeof Atomics.notify === 'function'
         this.sabChannel = useSab ? createSabChannel() : null
         this.worker = null
         this.seq = 0
@@ -59,7 +65,7 @@ class LeanWorker {
             this.sabChannel != null ? { workerData: { sab: this.sabChannel } } : undefined
         const worker = new Worker(this.filename, workerOpts)
         worker.unref()
-        worker.on('message', ({ id, result, error, xmlBuf, sab }) => {
+        worker.on('message', ({ id, result, error, xmlBuf, sab, raw }) => {
             if (xmlBuf && this.onRecycleXml) this.onRecycleXml(xmlBuf)
             const p = this.pending.get(id)
             this.pending.delete(id)
@@ -69,6 +75,12 @@ class LeanWorker {
             } else if (sab && this.sabChannel) {
                 try {
                     p.resolve(readResultFromSab(this.sabChannel))
+                } catch (err) {
+                    p.reject(err)
+                }
+            } else if (raw) {
+                try {
+                    p.resolve(parseCamaroJson(result))
                 } catch (err) {
                     p.reject(err)
                 }
@@ -105,6 +117,35 @@ class LeanWorker {
         this.idleTimer.unref()
     }
 
+    settleSabResult(id) {
+        if (
+            !this.sabChannel ||
+            Atomics.load(this.sabChannel.control, CTRL.STATE) !== STATE.DONE
+        ) {
+            return
+        }
+        const p = this.pending.get(id)
+        this.pending.delete(id)
+        if (!p) return
+        try {
+            p.resolve(readResultFromSab(this.sabChannel))
+        } catch (err) {
+            p.reject(err)
+        }
+        if (this.pending.size === 0) this.scheduleIdleShutdown()
+    }
+
+    waitForSabResult(id) {
+        const channel = this.sabChannel
+        if (!channel) return
+        const waiter = Atomics.waitAsync(channel.control, CTRL.STATE, STATE.BUSY)
+        if (waiter.async) {
+            waiter.value.then(() => this.settleSabResult(id))
+        } else {
+            this.settleSabResult(id)
+        }
+    }
+
     run(task, opts = {}) {
         this.ensureWorker()
         this.clearIdleTimer()
@@ -124,11 +165,16 @@ class LeanWorker {
             }
             return new Promise((resolve, reject) => {
                 this.pending.set(id, { resolve, reject })
+                if (this.useSabWait) {
+                    Atomics.store(this.sabChannel.control, CTRL.STATE, STATE.BUSY)
+                }
                 this.worker.postMessage({
                     id,
                     sab: true,
+                    waitForSab: this.useSabWait,
                     task: stripXmlFromTask(task),
                 })
+                if (this.useSabWait) this.waitForSabResult(id)
             })
         }
 

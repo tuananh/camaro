@@ -19,13 +19,42 @@ if (forceMainThread) {
     }
 } else {
     const { LeanPool } = require('./lean-pool')
+    const workerFn = require('./worker')
     const leanPool = new LeanPool(resolve(__dirname, 'pool-worker.js'), {
         maxThreads: poolSize > 0 ? poolSize : undefined,
         onRecycleXml: recycleXmlUtf8Buffer,
         useSab: useSabIpc,
     })
+    let directTaskActive = false
+
+    function directTask(task) {
+        if (!task.sab) return task
+        return {
+            ...task,
+            sab: false,
+            recycleXml: false,
+            args: [
+                typeof task.xmlString === 'string'
+                    ? utf8BytesFromJsString(task.xmlString)
+                    : task.args[0],
+                ...task.args.slice(1),
+            ],
+        }
+    }
+
     pool = {
         run(task, opts) {
+            // A single request does not benefit from crossing a worker boundary.
+            // Keep the first in-flight request local, but retain the pool for
+            // concurrent work so multi-core throughput remains available.
+            if (!directTaskActive) {
+                directTaskActive = true
+                return workerFn(directTask(task))
+                    .then(parseCamaroJson)
+                    .finally(() => {
+                        directTaskActive = false
+                    })
+            }
             return leanPool.run(task, opts)
         },
         destroy() {
