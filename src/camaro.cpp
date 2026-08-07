@@ -101,16 +101,16 @@ inline bool xpath_path_absolute(const string &path) {
 }
 
 /// Walk Name/Name/@attr paths without compiling XPath.
-static pugi::xml_node follow_path(pugi::xml_node ctx, const char *path,
-                                  bool absolute) {
+static pugi::xml_node follow_path(pugi::xml_node ctx, const char *begin,
+                                  const char *end, bool absolute) {
   if (!ctx)
     return pugi::xml_node();
-  const char *p = path;
-  if (absolute && *p == '/')
+  const char *p = begin;
+  if (absolute && p < end && *p == '/')
     ++p;
-  while (*p) {
+  while (p < end) {
     const char *start = p;
-    while (*p && *p != '/')
+    while (p < end && *p != '/')
       ++p;
     if (p > start) {
       ctx =
@@ -118,7 +118,7 @@ static pugi::xml_node follow_path(pugi::xml_node ctx, const char *path,
       if (!ctx)
         return pugi::xml_node();
     }
-    if (*p == '/')
+    if (p < end && *p == '/')
       ++p;
   }
   return ctx;
@@ -130,20 +130,22 @@ static string follow_path_string(pugi::xml_node ctx, const string &path,
   if (!path.empty() && path[0] == '@') {
     if (!ctx)
       return "";
-    pugi::xml_attribute a = ctx.attribute(path.c_str() + 1);
+    pugi::xml_attribute a =
+        ctx.attribute(pugi::string_view_t(path.data() + 1, path.size() - 1));
     return a ? string(a.value()) : "";
   }
   const size_t at_pos = path.rfind("/@");
   if (at_pos != string::npos) {
-    const string elem = path.substr(0, at_pos);
-    const string attr = path.substr(at_pos + 2);
-    pugi::xml_node n = follow_path(ctx, elem.c_str(), absolute);
+    pugi::xml_node n =
+        follow_path(ctx, path.data(), path.data() + at_pos, absolute);
     if (!n)
       return "";
-    pugi::xml_attribute a = n.attribute(attr.c_str());
+    pugi::xml_attribute a = n.attribute(
+        pugi::string_view_t(path.data() + at_pos + 2, path.size() - at_pos - 2));
     return a ? string(a.value()) : "";
   }
-  pugi::xml_node n = follow_path(ctx, path.c_str(), absolute);
+  pugi::xml_node n =
+      follow_path(ctx, path.data(), path.data() + path.size(), absolute);
   return n ? string(n.child_value()) : "";
 }
 
@@ -153,29 +155,32 @@ static double follow_path_number(pugi::xml_node ctx, const string &path,
   if (!path.empty() && path[0] == '@') {
     if (!ctx)
       return std::nan("");
-    pugi::xml_attribute a = ctx.attribute(path.c_str() + 1);
+    pugi::xml_attribute a =
+        ctx.attribute(pugi::string_view_t(path.data() + 1, path.size() - 1));
     return a ? a.as_double() : std::nan("");
   }
   const size_t at_pos = path.rfind("/@");
   if (at_pos != string::npos) {
-    const string elem = path.substr(0, at_pos);
-    const string attr = path.substr(at_pos + 2);
-    pugi::xml_node n = follow_path(ctx, elem.c_str(), absolute);
+    pugi::xml_node n =
+        follow_path(ctx, path.data(), path.data() + at_pos, absolute);
     if (!n)
       return std::nan("");
-    pugi::xml_attribute a = n.attribute(attr.c_str());
+    pugi::xml_attribute a = n.attribute(
+        pugi::string_view_t(path.data() + at_pos + 2, path.size() - at_pos - 2));
     return a ? a.as_double() : std::nan("");
   }
-  pugi::xml_node n = follow_path(ctx, path.c_str(), absolute);
+  pugi::xml_node n =
+      follow_path(ctx, path.data(), path.data() + path.size(), absolute);
   return n ? n.text().as_double() : std::nan("");
 }
 
 static bool fast_boolean_eq(pugi::xml_node ctx, const string &path,
                             const string &expected) {
-  pugi::xml_node n = follow_path(ctx, path.c_str(), false);
+  pugi::xml_node n =
+      follow_path(ctx, path.data(), path.data() + path.size(), false);
   if (!n)
     return false;
-  return string(n.child_value()) == expected;
+  return std::strcmp(n.child_value(), expected.c_str()) == 0;
 }
 
 static bool try_fast_boolean(pugi::xml_node ctx, const string &path,
@@ -232,7 +237,9 @@ static void collect_path_nodes(pugi::xml_node ctx, const string &path,
   }
   const string parent_path = path.substr(0, slash);
   const char *child_name = path.c_str() + slash + 1;
-  pugi::xml_node parent = follow_path(ctx, parent_path.c_str(), false);
+  pugi::xml_node parent =
+      follow_path(ctx, parent_path.data(), parent_path.data() + parent_path.size(),
+                  false);
   if (!parent)
     return;
   for (pugi::xml_node c = parent.child(child_name); c;
@@ -373,11 +380,7 @@ void query_array_w(JsonWriter &w, T &doc, const TemplateValue &node,
   const string &base_path = node.items[0].as_string();
   const TemplateValue &inner_template = node.items[1];
 
-  std::vector<pugi::xpath_node> nodes;
-  nodes.reserve(32);
-  collect_array_nodes(context_node(doc), base_path, nodes, xc, doc);
-
-  for (pugi::xpath_node n : nodes) {
+  const auto append_node = [&](pugi::xpath_node n) {
     if (inner_template.is_object()) {
       w.begin_object();
       for (const auto &member : inner_template.members) {
@@ -396,7 +399,37 @@ void query_array_w(JsonWriter &w, T &doc, const TemplateValue &node,
         w.write_bool(query_boolean(n, inner_template, xc));
       }
     }
+  };
+
+  // The common nested-array case has a simple parent/child path. Stream its
+  // children directly instead of allocating a node vector for every parent.
+  if (is_simple_nav_path(base_path)) {
+    const size_t slash = base_path.rfind('/');
+    pugi::xml_node parent = context_node(doc);
+    const char *child_name = base_path.data();
+    size_t child_len = base_path.size();
+    if (slash != string::npos) {
+      parent = follow_path(parent, base_path.data(),
+                           base_path.data() + slash, false);
+      child_name += slash + 1;
+      child_len -= slash + 1;
+    }
+    for (pugi::xml_node child =
+             parent.child(pugi::string_view_t(child_name, child_len));
+         child;
+         child = child.next_sibling(pugi::string_view_t(child_name, child_len))) {
+      append_node(pugi::xpath_node(child));
+    }
+    w.end_array();
+    return;
   }
+
+  std::vector<pugi::xpath_node> nodes;
+  nodes.reserve(32);
+  collect_array_nodes(context_node(doc), base_path, nodes, xc, doc);
+
+  for (pugi::xpath_node n : nodes)
+    append_node(n);
   w.end_array();
 }
 

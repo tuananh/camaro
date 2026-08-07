@@ -12,6 +12,8 @@ cp src/pugiconfig.hpp node_modules/pugixml/src/pugiconfig.hpp
   emcc \
     --bind \
     ${OPTIMIZE} \
+    -flto \
+    -msimd128 \
     -DNDEBUG \
     -s 'ALLOW_MEMORY_GROWTH=1' \
     -s 'EXPORT_NAME="pugixml"' \
@@ -25,6 +27,8 @@ echo "2/2 Compiling camaro wasm bindings"
   emcc \
     --bind \
     ${OPTIMIZE} \
+    -flto \
+    -msimd128 \
     -DNDEBUG \
     -s 'MALLOC="emmalloc"' \
     -s EXPORTED_FUNCTIONS='["_malloc","_free"]' \

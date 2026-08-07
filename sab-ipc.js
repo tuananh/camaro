@@ -95,18 +95,24 @@ function writeResultToSab(channel, payload) {
         str = JSON.stringify(payload)
     }
 
-    const encoded = textEncoder
-        ? textEncoder.encode(str)
-        : new Uint8Array(Buffer.from(str, 'utf8'))
-
+  if (textEncoder) {
+    const { read, written } = textEncoder.encodeInto(str, channel.result)
+    if (read !== str.length) {
+      throw new RangeError(
+        `Result exceeds CAMARO_SAB_RESULT_BYTES (${channel.result.byteLength})`,
+      )
+    }
+    Atomics.store(channel.control, CTRL.RESULT_LEN, written)
+  } else {
+    const encoded = new Uint8Array(Buffer.from(str, 'utf8'))
     if (encoded.byteLength > channel.result.byteLength) {
         throw new RangeError(
             `Result (${encoded.byteLength} bytes) exceeds CAMARO_SAB_RESULT_BYTES (${channel.result.byteLength})`,
         )
     }
-
     channel.result.set(encoded)
     Atomics.store(channel.control, CTRL.RESULT_LEN, encoded.byteLength)
+  }
     Atomics.store(channel.control, CTRL.HAS_NAN, hasNan)
     return hasNan === 1
 }
