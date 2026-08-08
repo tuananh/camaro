@@ -50,7 +50,7 @@ public:
   }
 };
 
-enum ReturnType { T_NUMBER, T_STRING, T_BOOLEAN };
+using ReturnType = TemplateValue::ReturnType;
 
 /// parse_escapes for entities; skip parse_eol / parse_wconv_attribute (see
 /// pugixml #284).
@@ -147,6 +147,33 @@ static string follow_path_string(pugi::xml_node ctx, const string &path,
   pugi::xml_node n =
       follow_path(ctx, path.data(), path.data() + path.size(), absolute);
   return n ? string(n.child_value()) : "";
+}
+
+static pugi::xml_node follow_simple_path(pugi::xml_node ctx,
+                                         const TemplateValue &v) {
+  if (!ctx)
+    return pugi::xml_node();
+  for (const auto &segment : v.path_segments) {
+    ctx = ctx.child(pugi::string_view_t(v.str.data() + segment.start,
+                                        segment.length));
+    if (!ctx)
+      return pugi::xml_node();
+  }
+  return ctx;
+}
+
+static string follow_simple_path_string(pugi::xml_node ctx,
+                                        const TemplateValue &v) {
+  pugi::xml_node n = follow_simple_path(ctx, v);
+  if (!n)
+    return "";
+  if (v.path_has_attribute) {
+    const auto &attr = v.attribute_segment;
+    pugi::xml_attribute a = n.attribute(pugi::string_view_t(
+        v.str.data() + attr.start + 1, attr.length - 1));
+    return a ? string(a.value()) : "";
+  }
+  return string(n.child_value());
 }
 
 static double follow_path_number(pugi::xml_node ctx, const string &path,
@@ -291,42 +318,42 @@ static void collect_array_nodes(pugi::xml_node ctx, const string &base_path,
 
 ReturnType get_return_type(const string &path) {
   if (path.empty())
-    return T_STRING;
+    return ReturnType::String;
   const char ch = path[0];
-  ReturnType t = T_STRING;
+  ReturnType t = ReturnType::String;
   switch (ch) {
   case 'b':
     if (start_with(path, "boolean(")) {
-      t = T_BOOLEAN;
+      t = ReturnType::Boolean;
     }
     break;
   case 'c':
     if (start_with(path, "count(") || start_with(path, "ceiling(")) {
-      t = T_NUMBER;
+      t = ReturnType::Number;
     }
     break;
   case 'f':
     if (start_with(path, "floor(")) {
-      t = T_NUMBER;
+      t = ReturnType::Number;
     }
     break;
   case 'n':
     if (start_with(path, "number(")) {
-      t = T_NUMBER;
+      t = ReturnType::Number;
     }
     break;
   case 'r':
     if (start_with(path, "round(")) {
-      t = T_NUMBER;
+      t = ReturnType::Number;
     }
     break;
   case 's':
     if (start_with(path, "sum(")) {
-      t = T_NUMBER;
+      t = ReturnType::Number;
     }
     break;
   default:
-    t = T_STRING;
+    t = ReturnType::String;
     break;
   }
 
@@ -336,9 +363,9 @@ ReturnType get_return_type(const string &path) {
 template <typename T>
 bool query_boolean(T &xnode, const TemplateValue &v, XpathCache &xc) {
   const string &path = v.as_string();
-  bool out = false;
-  if (try_fast_boolean(context_node(xnode), path, out))
-    return out;
+  if (v.fast_boolean)
+    return fast_boolean_eq(context_node(xnode), v.boolean_left,
+                           v.boolean_right);
   return xc.query_for(path).evaluate_boolean(xnode);
 }
 
@@ -348,9 +375,8 @@ string query_string(T &xnode, const TemplateValue &v, XpathCache &xc) {
   if (!path.empty() && path[0] == '#') {
     return path.substr(1);
   }
-  if (is_simple_nav_path(path)) {
-    return follow_path_string(context_node(xnode), path,
-                              xpath_path_absolute(path));
+  if (v.simple_nav_path) {
+    return follow_simple_path_string(context_node(xnode), v);
   }
   return xc.query_for(path).evaluate_string(xnode);
 }
@@ -358,9 +384,9 @@ string query_string(T &xnode, const TemplateValue &v, XpathCache &xc) {
 template <typename T>
 double query_number(T &xnode, const TemplateValue &v, XpathCache &xc) {
   const string &path = v.as_string();
-  double out = 0;
-  if (try_fast_number(context_node(xnode), path, out))
-    return out;
+  if (v.fast_number)
+    return follow_path_number(context_node(xnode), v.number_path,
+                              v.number_path_absolute);
   return xc.query_for(path).evaluate_number(xnode);
 }
 
@@ -377,7 +403,8 @@ void query_array_w(JsonWriter &w, T &doc, const TemplateValue &node,
     return;
   }
 
-  const string &base_path = node.items[0].as_string();
+  const TemplateValue &base = node.items[0];
+  const string &base_path = base.as_string();
   const TemplateValue &inner_template = node.items[1];
 
   const auto append_node = [&](pugi::xpath_node n) {
@@ -390,12 +417,12 @@ void query_array_w(JsonWriter &w, T &doc, const TemplateValue &node,
       w.end_object();
     } else if (inner_template.is_string()) {
       const string &path = inner_template.as_string();
-      ReturnType type = get_return_type(path);
-      if (type == T_STRING) {
+      ReturnType type = inner_template.return_type;
+      if (type == ReturnType::String) {
         w.write_string(query_string(n, inner_template, xc));
-      } else if (type == T_NUMBER) {
+      } else if (type == ReturnType::Number) {
         w.write_number(query_number(n, inner_template, xc), has_nan);
-      } else if (type == T_BOOLEAN) {
+      } else if (type == ReturnType::Boolean) {
         w.write_bool(query_boolean(n, inner_template, xc));
       }
     }
@@ -403,8 +430,8 @@ void query_array_w(JsonWriter &w, T &doc, const TemplateValue &node,
 
   // The common nested-array case has a simple parent/child path. Stream its
   // children directly instead of allocating a node vector for every parent.
-  if (is_simple_nav_path(base_path)) {
-    const size_t slash = base_path.rfind('/');
+  if (base.simple_nav_path) {
+    const size_t slash = base.final_slash;
     pugi::xml_node parent = context_node(doc);
     const char *child_name = base_path.data();
     size_t child_len = base_path.size();
@@ -426,7 +453,12 @@ void query_array_w(JsonWriter &w, T &doc, const TemplateValue &node,
 
   std::vector<pugi::xpath_node> nodes;
   nodes.reserve(32);
-  collect_array_nodes(context_node(doc), base_path, nodes, xc, doc);
+  if (base.simple_descendant_name) {
+    collect_descendants_by_name(context_node(doc), base.descendant_name.c_str(),
+                                nodes);
+  } else {
+    collect_array_nodes(context_node(doc), base_path, nodes, xc, doc);
+  }
 
   for (pugi::xpath_node n : nodes)
     append_node(n);
@@ -450,12 +482,12 @@ void write_value(T &ctx, JsonWriter &w, const TemplateValue &n, XpathCache &xc,
     if (path.empty()) {
       w.write_empty_string();
     } else {
-      ReturnType type = get_return_type(path);
-      if (type == T_NUMBER) {
+      ReturnType type = n.return_type;
+      if (type == ReturnType::Number) {
         w.write_number(query_number(ctx, n, xc), has_nan);
-      } else if (type == T_STRING) {
+      } else if (type == ReturnType::String) {
         w.write_string(query_string(ctx, n, xc));
-      } else if (type == T_BOOLEAN) {
+      } else if (type == ReturnType::Boolean) {
         w.write_bool(query_boolean(ctx, n, xc));
       }
     }
@@ -470,7 +502,10 @@ static val transform_loaded_doc(pugi::xml_document &doc,
     const TemplateValue &j = te.parsed;
     XpathCache &xc = te.xpath;
     JsonWriter w;
-    w.reserve(32768);
+    // Most transform templates select a small subset of the XML. Avoid
+    // allocating a 32 KiB result buffer for every call; std::string grows
+    // geometrically when a caller genuinely produces a larger result.
+    w.reserve(2048);
     bool has_nan = false;
 
     if (j.is_array()) {

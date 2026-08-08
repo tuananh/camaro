@@ -48,8 +48,9 @@ if (forceMainThread) {
             // Keep the first in-flight request local, but retain the pool for
             // concurrent work so multi-core throughput remains available.
             if (!directTaskActive) {
+                const localTask = directTask(task)
                 directTaskActive = true
-                return workerFn(directTask(task))
+                return workerFn(localTask)
                     .then(parseCamaroJson)
                     .finally(() => {
                         directTaskActive = false
