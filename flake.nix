@@ -22,7 +22,7 @@
           default = pkgs.mkShell {
             packages = [
               pkgs.emscripten
-              pkgs.nodejs_24
+              pkgs.nodejs_26
             ];
           };
         });
