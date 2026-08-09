@@ -17,15 +17,18 @@
 
 ## Setup development environment
 
-It's easier to have Docker installed for development.
+Install [Nix](https://nixos.org/download/) with flakes enabled, then enter the
+project's pinned development environment:
 
 ```sh
+nix develop
+
 npm install
 
 # for fetching c++ dependencies using napa
 npm run install-deps
 
-# use docker to build. if you don't have Docker installed, you can use build.sh script
+# build the WebAssembly module
 npm run build
 
 # tests

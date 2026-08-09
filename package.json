@@ -15,7 +15,7 @@
     "bench:baseline": "node benchmark/baseline.js",
     "bench:to-json": "node benchmark/to-json.js",
     "install-deps": "napa",
-    "build": "docker run --rm -v $(pwd):/src emscripten/emsdk:6.0.0 ./build.sh",
+    "build": "./build.sh",
     "gen-esm": "gen-esm-wrapper . ./index.mjs"
   },
   "exports": {
