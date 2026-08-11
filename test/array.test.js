@@ -24,3 +24,26 @@ t.test('array test', async t => {
 
     t.end()
 })
+
+// https://github.com/tuananh/camaro/issues/178
+t.test('array path traverses every matching parent', async t => {
+    const xml = `
+        <players>
+            <group>
+                <player><name>wayne rooney</name></player>
+                <player><name>cristiano ronaldo</name></player>
+            </group>
+            <group>
+                <player><name>eric cantona</name></player>
+            </group>
+        </players>
+    `
+    const result = await transform(xml, ['players/group/player', { name: 'name' }])
+
+    t.deepEqual(result, [
+        { name: 'wayne rooney' },
+        { name: 'cristiano ronaldo' },
+        { name: 'eric cantona' }
+    ])
+    t.end()
+})

@@ -255,23 +255,28 @@ static bool try_fast_number(pugi::xml_node ctx, const string &path,
 
 static void collect_path_nodes(pugi::xml_node ctx, const string &path,
                                std::vector<pugi::xpath_node> &out) {
-  const size_t slash = path.rfind('/');
-  if (slash == string::npos) {
-    for (pugi::xml_node c = ctx.child(path.c_str()); c;
-         c = c.next_sibling(path.c_str()))
-      out.emplace_back(c);
-    return;
+  std::vector<pugi::xml_node> parents{ctx};
+  std::vector<pugi::xml_node> children;
+  size_t start = path.front() == '/' ? 1 : 0;
+
+  while (start < path.size() && !parents.empty()) {
+    const size_t slash = path.find('/', start);
+    const size_t end = slash == string::npos ? path.size() : slash;
+    const pugi::string_view_t name(path.data() + start, end - start);
+    children.clear();
+    for (const pugi::xml_node parent : parents) {
+      for (pugi::xml_node child = parent.child(name); child;
+           child = child.next_sibling(name)) {
+        children.push_back(child);
+      }
+    }
+    parents.swap(children);
+    start = end + 1;
   }
-  const string parent_path = path.substr(0, slash);
-  const char *child_name = path.c_str() + slash + 1;
-  pugi::xml_node parent =
-      follow_path(ctx, parent_path.data(), parent_path.data() + parent_path.size(),
-                  false);
-  if (!parent)
-    return;
-  for (pugi::xml_node c = parent.child(child_name); c;
-       c = c.next_sibling(child_name))
-    out.emplace_back(c);
+
+  out.reserve(out.size() + parents.size());
+  for (const pugi::xml_node node : parents)
+    out.emplace_back(node);
 }
 
 static bool is_simple_descendant_name(const string &path, string &name_out) {
@@ -305,7 +310,7 @@ static void collect_array_nodes(pugi::xml_node ctx, const string &base_path,
     collect_descendants_by_name(ctx, desc_name.c_str(), out);
     return;
   }
-  if (is_simple_nav_path(base_path)) {
+  if (is_simple_nav_path(base_path) && base_path.find('@') == string::npos) {
     collect_path_nodes(ctx, base_path, out);
     return;
   }
@@ -428,9 +433,10 @@ void query_array_w(JsonWriter &w, T &doc, const TemplateValue &node,
     }
   };
 
-  // The common nested-array case has a simple parent/child path. Stream its
-  // children directly instead of allocating a node vector for every parent.
-  if (base.simple_nav_path) {
+  // A direct child path can stream results without collecting a node vector.
+  // Multi-segment paths must consider every matching node at each segment.
+  if (base.simple_nav_path && base.final_slash == string::npos &&
+      base_path.front() != '@') {
     const size_t slash = base.final_slash;
     pugi::xml_node parent = context_node(doc);
     const char *child_name = base_path.data();
