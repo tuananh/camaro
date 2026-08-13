@@ -24,9 +24,9 @@
 ```
 benchmark                   avg (min … max) p75 / p99    (min … top 1%)
 ------------------------------------------- -------------------------------
-camaro v6                    122.91 µs/iter 124.42 µs █
-                    (114.92 µs … 385.09 µs) 163.20 µs █▂██
-                    (664.00  b … 824.26 kb)  13.06 kb ████▇▄▃▂▂▁▁▁▁▁▁▁▁▁▁▁
+camaro v6                     98.94 µs/iter  97.94 µs █▆
+                     (93.24 µs … 358.99 µs) 140.47 µs ██
+                    (280.00  b … 537.55 kb)  11.69 kb ██▅▅▄▂▂▂▁▁▁▁▁▂▁▁▁▁▁▁
 
 txml                         491.71 µs/iter 485.85 µs █
                       (478.64 µs … 845.79 µs) 737.81 µs █▄
@@ -46,10 +46,10 @@ xml-js                         2.49 ms/iter   2.47 ms  █
 
 summary
   camaro v6
-   4x faster than txml
-   20.25x faster than xml-js
-   21.39x faster than fast-xml-parser
-   29.12x faster than xml2js
+   5.27x faster than txml
+   25.78x faster than xml-js
+   24.21x faster than fast-xml-parser
+   37.02x faster than xml2js
 ```
 
 The XML file is an actual XML response from the Expedia API. I just deleted some nodes to change its size for benchmarking.
