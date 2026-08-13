@@ -1,5 +1,6 @@
 #include "json_writer.hpp"
 
+#include <charconv>
 #include <cmath>
 #include <cstdio>
 
@@ -13,8 +14,26 @@ void JsonWriter::sep() {
 }
 
 void JsonWriter::append_escaped(const std::string &s) {
+  append_escaped(s.data(), s.size());
+}
+
+void JsonWriter::append_escaped(const char *s, size_t length) {
   buf.push_back('"');
-  for (char c : s) {
+  size_t start = 0;
+  while (start < length) {
+    size_t i = start;
+    while (i < length) {
+      const char c = s[i];
+      if (c == '"' || c == '\\' || c == '\b' || c == '\f' || c == '\n' ||
+          c == '\r' || c == '\t' || static_cast<unsigned char>(c) < 0x20)
+        break;
+      ++i;
+    }
+    buf.append(s + start, i - start);
+    if (i == length)
+      break;
+
+    const char c = s[i];
     switch (c) {
     case '"':
       buf.append("\\\"");
@@ -38,15 +57,12 @@ void JsonWriter::append_escaped(const std::string &s) {
       buf.append("\\t");
       break;
     default:
-      if (static_cast<unsigned char>(c) < 0x20) {
-        char hex[7];
-        std::snprintf(hex, sizeof(hex), "\\u%04x", c & 0xff);
-        buf.append(hex);
-      } else {
-        buf.push_back(c);
-      }
+      char hex[7];
+      std::snprintf(hex, sizeof(hex), "\\u%04x", c & 0xff);
+      buf.append(hex);
       break;
     }
+    start = i + 1;
   }
   buf.push_back('"');
 }
@@ -81,8 +97,12 @@ void JsonWriter::write_key(const std::string &key) {
 }
 
 void JsonWriter::write_string(const std::string &s) {
+  write_string(s.data(), s.size());
+}
+
+void JsonWriter::write_string(const char *s, size_t length) {
   sep();
-  append_escaped(s);
+  append_escaped(s, length);
   container_first = false;
 }
 
@@ -101,8 +121,13 @@ void JsonWriter::write_number(double n, bool &has_nan) {
     buf.append(std::signbit(n) ? "-Infinity" : "Infinity");
   } else {
     char tmp[64];
-    const int len = std::snprintf(tmp, sizeof(tmp), "%.17g", n);
-    buf.append(tmp, static_cast<size_t>(len));
+    const auto [end, error] = std::to_chars(tmp, tmp + sizeof(tmp), n);
+    if (error == std::errc()) {
+      buf.append(tmp, static_cast<size_t>(end - tmp));
+    } else {
+      const int len = std::snprintf(tmp, sizeof(tmp), "%.17g", n);
+      buf.append(tmp, static_cast<size_t>(len));
+    }
   }
   container_first = false;
 }

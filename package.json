@@ -13,6 +13,7 @@
     "test": "tape test/*.test.js",
     "bench:all": "node benchmark/transform.js",
     "bench:baseline": "node benchmark/baseline.js",
+    "bench:profile": "node benchmark/profile-transform.js",
     "bench:to-json": "node benchmark/to-json.js",
     "install-deps": "napa",
     "build": "./build.sh",

@@ -1,10 +1,33 @@
 const Module = require('./dist/camaro')
+const { parseCamaroJson } = require('./json-parse')
 
 let cachedInstance
+const templateIds = new Map()
+const profileTextEncoder = new TextEncoder()
+let profileUtf8Scratch = null
 
 function callWasmBinding(methodName, ...args) {
     if (!cachedInstance) throw new Error('camaro is not initialized yet.')
     return cachedInstance[methodName](...args)
+}
+
+function templateId(template) {
+    let id = templateIds.get(template)
+    if (id === undefined) {
+        id = callWasmBinding('registerTemplate', template)
+        templateIds.set(template, id)
+    }
+    return id
+}
+
+function profileUtf8Bytes(xml) {
+    if (typeof xml !== 'string') return asUint8View(xml)
+    const worstCase = xml.length * 3
+    if (!profileUtf8Scratch || profileUtf8Scratch.length < worstCase) {
+        profileUtf8Scratch = new Uint8Array(Math.max(worstCase, 65536))
+    }
+    const { written } = profileTextEncoder.encodeInto(xml, profileUtf8Scratch)
+    return profileUtf8Scratch.subarray(0, written)
 }
 
 function asUint8View(input) {
@@ -57,7 +80,12 @@ function runTask({ fn, args }) {
         const u8 = asUint8View(xml)
         if (u8 !== null)
             return withMallocUtf8(u8, (ptr, len) =>
-                callWasmBinding('transformFromUtf8', ptr, len, tmplStr))
+                callWasmBinding(
+                    'transformFromUtf8WithTemplateId',
+                    ptr,
+                    len,
+                    templateId(tmplStr),
+                ))
         return callWasmBinding(fn, xml, tmplStr)
     }
     if (fn === 'toJson') {
@@ -87,4 +115,43 @@ module.exports.whenReady = () => ready
 module.exports.runSync = (task) => {
     if (!cachedInstance) throw new Error('camaro is not initialized yet.')
     return runTask(task)
+}
+module.exports.profileTransform = async (xml, template) => {
+    await ready
+    const encodeStarted = performance.now()
+    const bytes = profileUtf8Bytes(xml)
+    const encodeFinished = performance.now()
+    if (bytes === null) throw new TypeError('XML must be a string or UTF-8 byte view')
+
+    let copyMs = 0
+    const nativeProfile = withMallocUtf8(bytes, (ptr, len) => {
+        const copyFinished = performance.now()
+        copyMs = copyFinished - encodeFinished
+        return callWasmBinding(
+            'profileTransformFromUtf8WithTemplateId',
+            ptr,
+            len,
+            templateId(template),
+        )
+    })
+    const decodeStarted = performance.now()
+    const result = parseCamaroJson(nativeProfile.result)
+    const decodeFinished = performance.now()
+
+    return {
+        result,
+        timings: {
+            encodeMs: encodeFinished - encodeStarted,
+            copyMs,
+            parseMs: nativeProfile.parseMs,
+            extractMs: nativeProfile.extractMs,
+            decodeMs: decodeFinished - decodeStarted,
+        },
+    }
+}
+module.exports.profileParse = async (xml) => {
+    await ready
+    const bytes = profileUtf8Bytes(xml)
+    return withMallocUtf8(bytes, (ptr, len) =>
+        callWasmBinding('profileParseFromUtf8', ptr, len))
 }

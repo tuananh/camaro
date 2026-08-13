@@ -17,6 +17,7 @@ struct JsonWriter {
   void end_array();
   void write_key(const std::string &key);
   void write_string(const std::string &s);
+  void write_string(const char *s, size_t length);
   void write_bool(bool b);
   void write_number(double n, bool &has_nan);
   void write_empty_string();
@@ -24,6 +25,7 @@ struct JsonWriter {
 private:
   void sep();
   void append_escaped(const std::string &s);
+  void append_escaped(const char *s, size_t length);
 };
 
 #endif
