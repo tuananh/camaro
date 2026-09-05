@@ -1,4 +1,4 @@
-import mod from "./index.js";
+import mod from './index.js';
 
 export default mod;
 export const transform = mod.transform;

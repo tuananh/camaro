@@ -2,7 +2,8 @@
 
 * [Issues](#issues)
 * [Pull Requests](#pull-requests)
-* [Setup development environmment](#setup-development-environment)
+* [Setup development environment](#setup-development-environment)
+* [Code style](#code-style)
 
 ## Issues
 
@@ -34,3 +35,28 @@ npm run build
 # tests
 npm test
 ```
+
+## Code style
+
+Run `npm run format` before submitting changes and use `npm run format:check`
+to verify formatting without modifying files.
+
+C and C++ code uses tabs with a width of four, Allman braces, and left-aligned
+pointers. Variables use `snake_case`, functions use `lowerCamelCase`, types use
+`UpperCamelCase`, global constants use `kCamelCase`, and macros use
+`SCARY_CASE`. Public native symbols have a `camaro_` prefix.
+
+The core implementation is C++98 and does not use the STL, RTTI, or exceptions.
+Pugixml is its sole dependency and is built with exceptions disabled. The
+Emscripten/Embind adapter is compiled separately with a modern C++ standard and
+may use the STL required at the JavaScript boundary.
+
+JavaScript and TypeScript follow the repository Prettier configuration: tabs,
+single quotes, semicolons, and a 150-column print width. Existing public
+JavaScript and WebAssembly names are compatibility constraints and do not
+change to match private naming rules.
+
+The files in `dist/` are generated. Do not edit them directly; run
+`npm run build` after native changes and commit both regenerated artifacts.
+Before submitting a native change, run a warning-clean build, `npm test`, and
+the relevant benchmark.

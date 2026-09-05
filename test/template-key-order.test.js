@@ -1,5 +1,5 @@
-const t = require('tape')
-const { transform } = require('../')
+const t = require('tape');
+const { transform } = require('../');
 
 const xml = `
     <root>
@@ -7,16 +7,16 @@ const xml = `
         <last_name>doe</last_name>
         <middle_name>whatever</middle_name>
     </root>
-`
+`;
 t.test('template key order test', async (t) => {
-    const template = {
-        'b': 'root/first_name',
-        'a': 'root/last_name',
-        'c': 'root/middle_name'
-    }
-    
-    const output = await transform(xml, template)
-    t.deepEqual(Object.keys(output), Object.keys(template), 'keys are in original order')
+	const template = {
+		b: 'root/first_name',
+		a: 'root/last_name',
+		c: 'root/middle_name',
+	};
 
-    t.end()
-})
+	const output = await transform(xml, template);
+	t.deepEqual(Object.keys(output), Object.keys(template), 'keys are in original order');
+
+	t.end();
+});

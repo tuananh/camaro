@@ -1,77 +1,82 @@
 {
-  "name": "camaro",
-  "version": "6.7.2",
-  "description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
-  "homepage": "https://github.com/tuananh/camaro",
-  "bugs": "https://github.com/tuananh/camaro/issues",
-  "main": "index.js",
-  "typings": "index.d.ts",
-  "engines": {
-    "node": ">= 20.x"
-  },
-  "scripts": {
-    "test": "tape test/*.test.js",
-    "bench:all": "node benchmark/transform.js",
-    "bench:baseline": "node benchmark/baseline.js",
-    "bench:profile": "node benchmark/profile-transform.js",
-    "bench:to-json": "node benchmark/to-json.js",
-    "install-deps": "napa",
-    "build": "./build.sh",
-    "gen-esm": "gen-esm-wrapper . ./index.mjs"
-  },
-  "exports": {
-    ".": {
-      "require": "./index.js",
-      "import": "./index.mjs",
-      "types": "./index.d.ts"
-    }
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tuananh/camaro.git"
-  },
-  "files": [
-    "index.js",
-    "index.mjs",
-    "index.d.ts",
-    "lean-pool.js",
-    "sab-ipc.js",
-    "pool-worker.js",
-    "json-parse.js",
-    "worker.js",
-    "dist/camaro.js",
-    "dist/camaro.wasm",
-    "index.d.ts"
-  ],
-  "keywords": [
-    "xpath",
-    "json",
-    "transform",
-    "pugixml",
-    "xml",
-    "parser",
-    "n-api",
-    "xml2json",
-    "webassembly",
-    "wasm"
-  ],
-  "author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
-  "license": "MIT",
-  "napa": {
-    "pugixml": "tuananh/pugixml#2e2283336364c2a55e07b6384334f64a09f3f8b0"
-  },
-  "napa-config": {
-    "cache": false
-  },
-  "devDependencies": {
-    "fast-xml-parser": "^5.2.5",
-    "gen-esm-wrapper": "^1.1.3",
-    "mitata": "^1.0.34",
-    "napa": "^3.0.0",
-    "tape": "^5.4.0",
-    "txml": "^6.0.0",
-    "xml-js": "^1.6.11",
-    "xml2js": "^0.6.0"
-  },
-  "dependencies": {}
+	"name": "camaro",
+	"version": "6.7.2",
+	"description": "Transforming XML to JSON using Node.js binding to native pugixml parser library",
+	"homepage": "https://github.com/tuananh/camaro",
+	"bugs": "https://github.com/tuananh/camaro/issues",
+	"main": "index.js",
+	"typings": "index.d.ts",
+	"engines": {
+		"node": ">= 20.x"
+	},
+	"scripts": {
+		"test": "tape test/*.test.js",
+		"format": "npm run format:cpp && npm run format:js",
+		"format:check": "npm run format:cpp:check && npm run format:js:check",
+		"format:cpp": "clang-format -i src/*.h src/*.hpp src/*.cpp",
+		"format:cpp:check": "clang-format --dry-run --Werror src/*.h src/*.hpp src/*.cpp",
+		"format:js": "prettier --write \"*.js\" \"*.mjs\" \"*.ts\" \"*.json\" \"benchmark/*.js\" \"test/*.js\" \".github/workflows/*.yaml\"",
+		"format:js:check": "prettier --check \"*.js\" \"*.mjs\" \"*.ts\" \"*.json\" \"benchmark/*.js\" \"test/*.js\" \".github/workflows/*.yaml\"",
+		"bench:all": "node benchmark/transform.js",
+		"bench:baseline": "node benchmark/baseline.js",
+		"bench:to-json": "node benchmark/to-json.js",
+		"install-deps": "napa",
+		"build": "./build.sh",
+		"gen-esm": "gen-esm-wrapper . ./index.mjs"
+	},
+	"exports": {
+		".": {
+			"require": "./index.js",
+			"import": "./index.mjs",
+			"types": "./index.d.ts"
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/tuananh/camaro.git"
+	},
+	"files": [
+		"index.js",
+		"index.mjs",
+		"index.d.ts",
+		"lean-pool.js",
+		"sab-ipc.js",
+		"pool-worker.js",
+		"json-parse.js",
+		"worker.js",
+		"dist/camaro.js",
+		"dist/camaro.wasm"
+	],
+	"keywords": [
+		"xpath",
+		"json",
+		"transform",
+		"pugixml",
+		"xml",
+		"parser",
+		"n-api",
+		"xml2json",
+		"webassembly",
+		"wasm"
+	],
+	"author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
+	"license": "MIT",
+	"napa": {
+		"pugixml": "tuananh/pugixml#2e2283336364c2a55e07b6384334f64a09f3f8b0"
+	},
+	"napa-config": {
+		"cache": false
+	},
+	"devDependencies": {
+		"fast-xml-parser": "^5.2.5",
+		"gen-esm-wrapper": "^1.1.3",
+		"mitata": "^1.0.34",
+		"napa": "^3.0.0",
+		"prettier": "^3.9.6",
+		"tape": "^5.4.0",
+		"txml": "^6.0.0",
+		"xml-js": "^1.6.11",
+		"xml2js": "^0.6.0"
+	},
+	"dependencies": {}
 }

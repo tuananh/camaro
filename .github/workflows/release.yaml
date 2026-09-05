@@ -4,25 +4,25 @@ on:
     tags:
       - 'v*'
 jobs:
- build:
-   runs-on: ubuntu-latest
-   permissions:
-     contents: read
-     id-token: write
-   steps:
-     - uses: actions/checkout@v7
-     - uses: actions/setup-node@v7
-       with:
-         node-version: 'lts/*'
-         registry-url: 'https://registry.npmjs.org'
-     - run: npm install
-     - name: Publish to npm
-       run: |
-         if node -e "process.exit(/-/.test(require('./package.json').version) ? 0 : 1)"; then
-           echo "Prerelease version; publishing with dist-tag: next"
-           npm publish --provenance --access public --tag next
-         else
-           npm publish --provenance --access public
-         fi
-       env:
-         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install
+      - name: Publish to npm
+        run: |
+          if node -e "process.exit(/-/.test(require('./package.json').version) ? 0 : 1)"; then
+            echo "Prerelease version; publishing with dist-tag: next"
+            npm publish --provenance --access public --tag next
+          else
+            npm publish --provenance --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

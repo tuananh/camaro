@@ -1,139 +1,363 @@
+/**
+ * camaro - allocation-aware JSON writer
+ *
+ * Copyright (c) Camaro contributors
+ * SPDX-License-Identifier: MIT
+ */
+
 #include "json_writer.hpp"
 
-#include <charconv>
-#include <cmath>
-#include <cstdio>
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
 
-void JsonWriter::reserve(size_t n) { buf.reserve(n); }
-
-void JsonWriter::sep() {
-  if (container_first)
-    container_first = false;
-  else
-    buf.push_back(',');
+JsonWriter::JsonWriter(const camaro_allocator& allocator)
+    : container_first_(true)
+    , status_(CAMARO_STATUS_OK)
+{
+	output_.data = 0;
+	output_.size = 0;
+	output_.capacity = 0;
+	output_.allocator = allocator;
 }
 
-void JsonWriter::append_escaped(const std::string &s) {
-  append_escaped(s.data(), s.size());
+JsonWriter::JsonWriter(const camaro_allocator& allocator, camaro_owned_bytes& existing)
+    : container_first_(true)
+    , status_(CAMARO_STATUS_OK)
+{
+	output_ = existing;
+	output_.size = 0;
+	if (!output_.allocator.allocate)
+		output_.allocator = allocator;
+	existing.data = 0;
+	existing.size = 0;
+	existing.capacity = 0;
 }
 
-void JsonWriter::append_escaped(const char *s, size_t length) {
-  buf.push_back('"');
-  size_t start = 0;
-  while (start < length) {
-    size_t i = start;
-    while (i < length) {
-      const char c = s[i];
-      if (c == '"' || c == '\\' || c == '\b' || c == '\f' || c == '\n' ||
-          c == '\r' || c == '\t' || static_cast<unsigned char>(c) < 0x20)
-        break;
-      ++i;
-    }
-    buf.append(s + start, i - start);
-    if (i == length)
-      break;
-
-    const char c = s[i];
-    switch (c) {
-    case '"':
-      buf.append("\\\"");
-      break;
-    case '\\':
-      buf.append("\\\\");
-      break;
-    case '\b':
-      buf.append("\\b");
-      break;
-    case '\f':
-      buf.append("\\f");
-      break;
-    case '\n':
-      buf.append("\\n");
-      break;
-    case '\r':
-      buf.append("\\r");
-      break;
-    case '\t':
-      buf.append("\\t");
-      break;
-    default:
-      char hex[7];
-      std::snprintf(hex, sizeof(hex), "\\u%04x", c & 0xff);
-      buf.append(hex);
-      break;
-    }
-    start = i + 1;
-  }
-  buf.push_back('"');
+JsonWriter::~JsonWriter()
+{
+	if (output_.data)
+		output_.allocator.free(output_.allocator.user_data, output_.data);
 }
 
-void JsonWriter::begin_object() {
-  sep();
-  buf.push_back('{');
-  container_first = true;
+bool JsonWriter::grow(size_t extra)
+{
+	if (status_ != CAMARO_STATUS_OK)
+		return false;
+	if (extra <= output_.capacity - output_.size)
+		return true;
+	if (extra > static_cast<size_t>(-1) - output_.size)
+	{
+		status_ = CAMARO_STATUS_OUT_OF_MEMORY;
+		return false;
+	}
+
+	size_t required = output_.size + extra;
+	size_t capacity = output_.capacity ? output_.capacity : 2048;
+	while (capacity < required)
+	{
+		size_t next = capacity + (capacity >> 1);
+		if (next <= capacity)
+		{
+			capacity = required;
+			break;
+		}
+		capacity = next;
+	}
+
+	void* data = output_.allocator.reallocate(output_.allocator.user_data, output_.data, capacity);
+	if (!data)
+	{
+		status_ = CAMARO_STATUS_OUT_OF_MEMORY;
+		return false;
+	}
+
+	output_.data = static_cast<unsigned char*>(data);
+	output_.capacity = capacity;
+	return true;
 }
 
-void JsonWriter::end_object() {
-  buf.push_back('}');
-  container_first = false;
+void JsonWriter::reserve(size_t size)
+{
+	if (size > output_.size)
+		grow(size - output_.size);
 }
 
-void JsonWriter::begin_array() {
-  sep();
-  buf.push_back('[');
-  container_first = true;
+void JsonWriter::append(const char* value, size_t size)
+{
+	if (!size || !grow(size))
+		return;
+	memcpy(output_.data + output_.size, value, size);
+	output_.size += size;
 }
 
-void JsonWriter::end_array() {
-  buf.push_back(']');
-  container_first = false;
+void JsonWriter::appendCharacter(char value)
+{
+	if (output_.size < output_.capacity)
+	{
+		output_.data[output_.size++] = static_cast<unsigned char>(value);
+		return;
+	}
+	if (!grow(1))
+		return;
+	output_.data[output_.size++] = static_cast<unsigned char>(value);
 }
 
-void JsonWriter::write_key(const std::string &key) {
-  sep();
-  append_escaped(key);
-  buf.push_back(':');
-  container_first = true;
+void JsonWriter::separator()
+{
+	if (container_first_)
+		container_first_ = false;
+	else
+		appendCharacter(',');
 }
 
-void JsonWriter::write_string(const std::string &s) {
-  write_string(s.data(), s.size());
+void JsonWriter::appendEscaped(const char* value, size_t size)
+{
+	static const char kHex[] = "0123456789abcdef";
+	if (!grow(size + 2))
+		return;
+
+	unsigned char* out = output_.data + output_.size;
+	*out++ = '"';
+
+	size_t i = 0;
+	while (i < size)
+	{
+		size_t start = i;
+		while (i < size)
+		{
+			unsigned char c = static_cast<unsigned char>(value[i]);
+			if (c == '"' || c == '\\' || c < 0x20)
+				break;
+			++i;
+		}
+
+		size_t run = i - start;
+		if (run)
+		{
+			if (static_cast<size_t>(out - output_.data) + run > output_.capacity)
+			{
+				output_.size = static_cast<size_t>(out - output_.data);
+				if (!grow(run + (size - i) + 2))
+					return;
+				out = output_.data + output_.size;
+			}
+			memcpy(out, value + start, run);
+			out += run;
+		}
+		if (i == size)
+			break;
+
+		unsigned char c = static_cast<unsigned char>(value[i++]);
+		const char* escape = 0;
+		switch (c)
+		{
+		case '"':
+			escape = "\\\"";
+			break;
+		case '\\':
+			escape = "\\\\";
+			break;
+		case '\b':
+			escape = "\\b";
+			break;
+		case '\f':
+			escape = "\\f";
+			break;
+		case '\n':
+			escape = "\\n";
+			break;
+		case '\r':
+			escape = "\\r";
+			break;
+		case '\t':
+			escape = "\\t";
+			break;
+		default:
+			break;
+		}
+
+		size_t escape_size = escape ? 2 : 6;
+		if (static_cast<size_t>(out - output_.data) + escape_size + 1 > output_.capacity)
+		{
+			output_.size = static_cast<size_t>(out - output_.data);
+			if (!grow(escape_size + (size - i) + 2))
+				return;
+			out = output_.data + output_.size;
+		}
+		if (escape)
+		{
+			out[0] = static_cast<unsigned char>(escape[0]);
+			out[1] = static_cast<unsigned char>(escape[1]);
+			out += 2;
+		}
+		else
+		{
+			out[0] = '\\';
+			out[1] = 'u';
+			out[2] = '0';
+			out[3] = '0';
+			out[4] = static_cast<unsigned char>(kHex[c >> 4]);
+			out[5] = static_cast<unsigned char>(kHex[c & 15]);
+			out += 6;
+		}
+	}
+
+	if (static_cast<size_t>(out - output_.data) + 1 > output_.capacity)
+	{
+		output_.size = static_cast<size_t>(out - output_.data);
+		if (!grow(1))
+			return;
+		out = output_.data + output_.size;
+	}
+	*out++ = '"';
+	output_.size = static_cast<size_t>(out - output_.data);
 }
 
-void JsonWriter::write_string(const char *s, size_t length) {
-  sep();
-  append_escaped(s, length);
-  container_first = false;
+void JsonWriter::beginObject()
+{
+	separator();
+	appendCharacter('{');
+	container_first_ = true;
 }
 
-void JsonWriter::write_bool(bool b) {
-  sep();
-  buf.append(b ? "true" : "false");
-  container_first = false;
+void JsonWriter::endObject()
+{
+	appendCharacter('}');
+	container_first_ = false;
 }
 
-void JsonWriter::write_number(double n, bool &has_nan) {
-  sep();
-  if (std::isnan(n)) {
-    has_nan = true;
-    append_escaped(kNanSentinel);
-  } else if (std::isinf(n)) {
-    buf.append(std::signbit(n) ? "-Infinity" : "Infinity");
-  } else {
-    char tmp[64];
-    const auto [end, error] = std::to_chars(tmp, tmp + sizeof(tmp), n);
-    if (error == std::errc()) {
-      buf.append(tmp, static_cast<size_t>(end - tmp));
-    } else {
-      const int len = std::snprintf(tmp, sizeof(tmp), "%.17g", n);
-      buf.append(tmp, static_cast<size_t>(len));
-    }
-  }
-  container_first = false;
+void JsonWriter::beginArray()
+{
+	separator();
+	appendCharacter('[');
+	container_first_ = true;
 }
 
-void JsonWriter::write_empty_string() {
-  sep();
-  buf.append("\"\"");
-  container_first = false;
+void JsonWriter::endArray()
+{
+	appendCharacter(']');
+	container_first_ = false;
+}
+
+void JsonWriter::writeKey(StringView key)
+{
+	separator();
+	appendEscaped(key.data, key.size);
+	appendCharacter(':');
+	container_first_ = true;
+}
+
+void JsonWriter::writeKey(const char* key)
+{
+	StringView value = {key, strlen(key)};
+	writeKey(value);
+}
+
+void JsonWriter::writeString(StringView value)
+{
+	writeString(value.data, value.size);
+}
+
+void JsonWriter::writeString(const char* value)
+{
+	writeString(value, strlen(value));
+}
+
+void JsonWriter::writeString(const char* value, size_t size)
+{
+	separator();
+	appendEscaped(value, size);
+	container_first_ = false;
+}
+
+void JsonWriter::writeBool(bool value)
+{
+	separator();
+	append(value ? "true" : "false", value ? 4 : 5);
+	container_first_ = false;
+}
+
+static char* writeUnsigned(char* out, unsigned long value)
+{
+	char digits[20];
+	size_t count = 0;
+	do
+	{
+		digits[count++] = static_cast<char>('0' + (value % 10));
+		value /= 10;
+	} while (value);
+
+	while (count)
+		*out++ = digits[--count];
+	return out;
+}
+
+void JsonWriter::writeNumber(double value, bool& has_nan)
+{
+	separator();
+	if (value != value)
+	{
+		has_nan = true;
+		appendEscaped(kNanSentinel, sizeof(kNanSentinel) - 1);
+	}
+	else if (value > 1.7976931348623157e+308)
+		append("Infinity", 8);
+	else if (value < -1.7976931348623157e+308)
+		append("-Infinity", 9);
+	else if (value >= -2147483647.0 && value <= 2147483647.0)
+	{
+		long integer = static_cast<long>(value);
+		if (static_cast<double>(integer) == value)
+		{
+			char buffer[16];
+			char* out = buffer;
+			if (integer < 0)
+			{
+				*out++ = '-';
+				integer = -integer;
+			}
+			out = writeUnsigned(out, static_cast<unsigned long>(integer));
+			append(buffer, static_cast<size_t>(out - buffer));
+		}
+		else
+		{
+			char buffer[64];
+			int size = snprintf(buffer, sizeof(buffer), "%.17g", value);
+			if (size < 0 || static_cast<size_t>(size) >= sizeof(buffer))
+				status_ = CAMARO_STATUS_INTERNAL_ERROR;
+			else
+				append(buffer, static_cast<size_t>(size));
+		}
+	}
+	else
+	{
+		char buffer[64];
+		int size = snprintf(buffer, sizeof(buffer), "%.17g", value);
+		if (size < 0 || static_cast<size_t>(size) >= sizeof(buffer))
+			status_ = CAMARO_STATUS_INTERNAL_ERROR;
+		else
+			append(buffer, static_cast<size_t>(size));
+	}
+	container_first_ = false;
+}
+
+void JsonWriter::writeEmptyString()
+{
+	separator();
+	append("\"\"", 2);
+	container_first_ = false;
+}
+
+camaro_status JsonWriter::status() const
+{
+	return status_;
+}
+
+void JsonWriter::release(camaro_owned_bytes& output)
+{
+	output = output_;
+	output_.data = 0;
+	output_.size = 0;
+	output_.capacity = 0;
 }

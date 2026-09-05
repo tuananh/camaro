@@ -1,56 +1,108 @@
+/**
+ * camaro - compact transform template representation
+ *
+ * Copyright (c) Camaro contributors
+ * SPDX-License-Identifier: MIT
+ */
+
 #ifndef CAMARO_TEMPLATE_VALUE_HPP
 #define CAMARO_TEMPLATE_VALUE_HPP
 
-#include <string>
-#include <cstddef>
-#include <utility>
-#include <vector>
+#include "camaro.h"
 
-struct TemplateValue {
-  enum class Kind { Object, Array, String };
-  enum class ReturnType { String, Number, Boolean };
-  struct PathSegment {
-    size_t start;
-    size_t length;
-  };
+#include <stddef.h>
 
-  Kind kind = Kind::String;
-  std::string str;
-  std::vector<std::pair<std::string, TemplateValue>> members;
-  std::vector<TemplateValue> items;
-  // Computed once while parsing a cached template. These avoid repeatedly
-  // classifying the same expressions for every matched XML element.
-  ReturnType return_type = ReturnType::String;
-  bool simple_nav_path = false;
-  bool path_absolute = false;
-  std::vector<PathSegment> path_segments;
-  bool path_has_attribute = false;
-  PathSegment attribute_segment{0, 0};
-  bool simple_descendant_name = false;
-  size_t final_slash = std::string::npos;
-  std::string descendant_name;
-  bool fast_number = false;
-  std::string number_path;
-  bool number_path_absolute = false;
-  bool fast_boolean = false;
-  std::string boolean_left;
-  std::string boolean_right;
-
-  static TemplateValue parse(const std::string &input);
-
-  bool is_object() const { return kind == Kind::Object; }
-  bool is_array() const { return kind == Kind::Array; }
-  bool is_string() const { return kind == Kind::String; }
-
-  bool empty() const {
-    if (kind == Kind::Array)
-      return items.empty();
-    if (kind == Kind::Object)
-      return members.empty();
-    return str.empty();
-  }
-
-  const std::string &as_string() const { return str; }
+struct CamaroArenaBlock
+{
+	CamaroArenaBlock* next;
+	size_t used;
+	size_t capacity;
 };
+
+struct CamaroArena
+{
+	camaro_allocator allocator;
+	CamaroArenaBlock* blocks;
+
+	void init(const camaro_allocator& value);
+	void destroy();
+	void* allocate(size_t size);
+	char* copy(const char* data, size_t size);
+};
+
+struct StringView
+{
+	const char* data;
+	size_t size;
+
+	bool empty() const;
+	bool equals(const char* value) const;
+	bool startsWith(const char* value) const;
+};
+
+struct TemplateValue;
+
+struct TemplateMember
+{
+	StringView key;
+	TemplateValue* value;
+	TemplateMember* next;
+};
+
+struct TemplateItem
+{
+	TemplateValue* value;
+	TemplateItem* next;
+};
+
+struct PathSegment
+{
+	size_t start;
+	size_t length;
+	const char* name;
+	PathSegment* next;
+};
+
+struct TemplateValue
+{
+	enum Kind
+	{
+		kObject,
+		kArray,
+		kString
+	};
+
+	enum ReturnType
+	{
+		kReturnString,
+		kReturnNumber,
+		kReturnBoolean
+	};
+
+	Kind kind;
+	StringView string;
+	TemplateMember* members;
+	TemplateMember* members_tail;
+	TemplateItem* items;
+	TemplateItem* items_tail;
+	size_t item_count;
+	ReturnType return_type;
+	bool simple_nav_path;
+	bool path_absolute;
+	PathSegment* path_segments;
+	PathSegment* path_segments_tail;
+	bool path_has_attribute;
+	PathSegment attribute_segment;
+	bool simple_descendant_name;
+	StringView descendant_name;
+	bool fast_number;
+	StringView number_path;
+	bool number_path_absolute;
+	bool fast_boolean;
+	StringView boolean_left;
+	StringView boolean_right;
+};
+
+camaro_status parseTemplate(CamaroArena& arena, camaro_bytes input, TemplateValue*& value);
 
 #endif

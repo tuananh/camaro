@@ -1,31 +1,55 @@
+/**
+ * camaro - allocation-aware JSON writer
+ *
+ * Copyright (c) Camaro contributors
+ * SPDX-License-Identifier: MIT
+ */
+
 #ifndef CAMARO_JSON_WRITER_HPP
 #define CAMARO_JSON_WRITER_HPP
 
-#include <string>
+#include "camaro.h"
+#include "template_value.hpp"
 
-/// JSON has no NaN; number() uses a sentinel restored by parse reviver when needed.
-constexpr const char kNanSentinel[] = "__camaro_nan__";
+static const char kNanSentinel[] = "__camaro_nan__";
 
-struct JsonWriter {
-  std::string buf;
-  bool container_first = true;
+class JsonWriter
+{
+public:
+	explicit JsonWriter(const camaro_allocator& allocator);
+	JsonWriter(const camaro_allocator& allocator, camaro_owned_bytes& existing);
+	~JsonWriter();
 
-  void reserve(size_t n);
-  void begin_object();
-  void end_object();
-  void begin_array();
-  void end_array();
-  void write_key(const std::string &key);
-  void write_string(const std::string &s);
-  void write_string(const char *s, size_t length);
-  void write_bool(bool b);
-  void write_number(double n, bool &has_nan);
-  void write_empty_string();
+	void reserve(size_t size);
+	void beginObject();
+	void endObject();
+	void beginArray();
+	void endArray();
+	void writeKey(StringView key);
+	void writeKey(const char* key);
+	void writeString(StringView value);
+	void writeString(const char* value);
+	void writeString(const char* value, size_t size);
+	void writeBool(bool value);
+	void writeNumber(double value, bool& has_nan);
+	void writeEmptyString();
+	void append(const char* value, size_t size);
+
+	camaro_status status() const;
+	void release(camaro_owned_bytes& output);
 
 private:
-  void sep();
-  void append_escaped(const std::string &s);
-  void append_escaped(const char *s, size_t length);
+	JsonWriter(const JsonWriter&);
+	JsonWriter& operator=(const JsonWriter&);
+
+	void separator();
+	void appendCharacter(char value);
+	void appendEscaped(const char* value, size_t size);
+	bool grow(size_t extra);
+
+	camaro_owned_bytes output_;
+	bool container_first_;
+	camaro_status status_;
 };
 
 #endif
