@@ -318,7 +318,6 @@ function parseStartTag(
 		if (valueEnd === -1) return null;
 
 		const rawValue = source.slice(valueStart, valueEnd);
-		if (rawValue.indexOf('<') !== -1) return null;
 		state.position = valueEnd + 1;
 
 		const attribute: XmlAttribute = {

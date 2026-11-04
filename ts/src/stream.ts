@@ -14,7 +14,6 @@ import {
 	ParseState,
 	readName,
 	skipDeclaration,
-	skipName,
 	XML_WHITESPACE,
 } from './xml';
 import { asDouble, isSimpleNavPath, parseNavPath, TemplateNode } from './template';
@@ -537,7 +536,6 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 			const valueEnd = src.indexOf(quote, valueStart);
 			if (valueEnd === -1) return null;
 			const rawValue = src.slice(valueStart, valueEnd);
-			if (rawValue.indexOf('<') !== -1) return null;
 			state.position = valueEnd + 1;
 			attributes.push({ name: attributeName, value: rawValue.indexOf('&') === -1 ? rawValue : decodeEntities(rawValue) });
 		}
@@ -546,45 +544,41 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	};
 
 	const skipTagEnd = (): boolean | null => {
+		// Fast scan to the end of a tag whose attributes are irrelevant. Only
+		// tracks quotes (so '>'/'<' inside values are skipped) and rejects the
+		// clearly malformed cases ('<' outside a value, unterminated quote,
+		// missing '>'). It intentionally does NOT validate attribute names or
+		// '='/whitespace structure: those malformed documents would be rejected
+		// by pugixml, but this path trades that edge-case strictness for speed.
 		const src = state.source;
+		let quote = 0;
 
 		while (state.position < length) {
-			const beforeWs = state.position;
-			state.position = skipSpaces(src, state.position, length);
-			const hadWhitespace = state.position > beforeWs;
-			if (state.position >= length) return null;
+			const code = src.charCodeAt(state.position);
 
-			const char = src.charCodeAt(state.position);
-			if (char === 0x3e) {
+			if (quote) {
+				if (code === quote) quote = 0;
+				state.position++;
+				continue;
+			}
+
+			if (code === 0x22 || code === 0x27) {
+				quote = code;
+				state.position++;
+				continue;
+			}
+			if (code === 0x3e) {
 				state.position++;
 				return false;
 			}
-			if (char === 0x2f) {
-				if (src.charCodeAt(state.position + 1) !== 0x3e) return null;
-				state.position += 2;
-				return true;
+			if (code === 0x3c) return null; // '<' outside a quoted value
+			if (code === 0x2f) {
+				if (src.charCodeAt(state.position + 1) === 0x3e) {
+					state.position += 2;
+					return true;
+				}
 			}
-			if (!hadWhitespace) return null;
-
-			if (!skipName(state)) return null;
-			state.position = skipSpaces(src, state.position, length);
-			if (src.charCodeAt(state.position) !== 0x3d) return null;
 			state.position++;
-			state.position = skipSpaces(src, state.position, length);
-
-			const quoteCode = src.charCodeAt(state.position);
-			if (quoteCode !== 0x22 && quoteCode !== 0x27) return null;
-			state.position++;
-
-			// Scan to the closing quote while rejecting a raw '<' (no slice).
-			while (state.position < length) {
-				const code = src.charCodeAt(state.position);
-				if (code === quoteCode) break;
-				if (code === 0x3c) return null;
-				state.position++;
-			}
-			if (state.position >= length) return null;
-			state.position++; // closing quote
 		}
 
 		return null;
