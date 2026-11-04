@@ -128,6 +128,69 @@ function collectMaxRel(plan: StreamValue | StreamItem, max: number): number {
 	return max;
 }
 
+/*
+ * Bloom filter over the element names that can ever match a capture or array.
+ * Memoised per plan, so the walk happens once per compiled template rather than
+ * once per document. A negative result is exact (no name matches), so the
+ * parser can skip matching entirely for the vast majority of elements.
+ */
+const NAME_BITS_SIZE = 16; // 128 bits
+
+const planNameBits = new WeakMap<object, Uint8Array>();
+
+function nameHashFirst(name: string): number {
+	const len = name.length;
+	return (name.charCodeAt(0) * 31 + len) & 127;
+}
+
+function nameHashLast(name: string): number {
+	const len = name.length;
+	return (name.charCodeAt(len - 1) * 17 + len * 7) & 127;
+}
+
+function addNameBit(bits: Uint8Array, name: string): void {
+	const len = name.length;
+	if (len === 0) return;
+	const h1 = nameHashFirst(name);
+	const h2 = nameHashLast(name);
+	bits[h1 >>> 3] |= 1 << (h1 & 7);
+	bits[h2 >>> 3] |= 1 << (h2 & 7);
+}
+
+function nameBitsHave(bits: Uint8Array, name: string): boolean {
+	const len = name.length;
+	if (len === 0) return true;
+	const h1 = nameHashFirst(name);
+	const h2 = nameHashLast(name);
+	return (bits[h1 >>> 3] & (1 << (h1 & 7))) !== 0 && (bits[h2 >>> 3] & (1 << (h2 & 7))) !== 0;
+}
+
+function collectNameBits(plan: StreamValue | StreamItem, bits: Uint8Array): void {
+	if (plan.kind === 'object') {
+		for (const member of plan.members) collectNameBits(member.plan, bits);
+	} else if (plan.kind === 'array') {
+		if (plan.path !== null) {
+			if (plan.path.kind === 'descendant') addNameBit(bits, plan.path.name);
+			else if (plan.path.segments.length > 0) addNameBit(bits, plan.path.segments[plan.path.segments.length - 1]);
+		}
+		if (plan.item !== null) collectNameBits(plan.item, bits);
+	} else if (plan.kind === 'path') {
+		if (plan.segments.length > 0) addNameBit(bits, plan.segments[plan.segments.length - 1]);
+	} else if (plan.kind === 'boolean') {
+		addNameBit(bits, plan.left);
+	}
+}
+
+function getNameBits(plan: StreamValue | StreamItem): Uint8Array {
+	let bits = planNameBits.get(plan);
+	if (bits === undefined) {
+		bits = new Uint8Array(NAME_BITS_SIZE);
+		collectNameBits(plan, bits);
+		planNameBits.set(plan, bits);
+	}
+	return bits;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Compiler                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -279,6 +342,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	const objectFrames: ObjectFrame[] = [];
 	let rootArray: ArrayFrame | null = null;
 	const maxRel = collectMaxRel(plan, 0);
+	const nameBits = getNameBits(plan);
 
 	let sawRootElement = false;
 
@@ -712,22 +776,28 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		const depth = elementStack.length + 1;
 		elementStack.push(name);
 
-		const matches = collectMatches(depth, name);
-
 		let attributes: Attr[] | null = null;
 		let selfClosing = false;
-		if (matches.needAttrs) {
-			const parsed = parseAttributes();
-			if (!parsed) return null;
-			attributes = parsed.attributes;
-			selfClosing = parsed.selfClosing;
+
+		if (nameBitsHave(nameBits, name)) {
+			const matches = collectMatches(depth, name);
+			if (matches.needAttrs) {
+				const parsed = parseAttributes();
+				if (!parsed) return null;
+				attributes = parsed.attributes;
+				selfClosing = parsed.selfClosing;
+			} else {
+				const skipped = skipTagEnd();
+				if (skipped === null) return null;
+				selfClosing = skipped;
+			}
+			applyMatches(matches.captures, matches.arrays, depth, attributes);
 		} else {
 			const skipped = skipTagEnd();
 			if (skipped === null) return null;
 			selfClosing = skipped;
 		}
 
-		applyMatches(matches.captures, matches.arrays, depth, attributes);
 		if (selfClosing) closeElement(depth);
 	}
 
