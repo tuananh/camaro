@@ -28,7 +28,7 @@ export type StreamScalar =
 	| { kind: 'boolean'; left: string; right: string };
 
 export type StreamObject = { kind: 'object'; members: { key: string; plan: StreamValue }[] };
-export type StreamArray = { kind: 'array'; path: StreamPath | null; item: StreamItem | null };
+export type StreamArray = { kind: 'array'; path: StreamPath | null; item: StreamItem | null; needsAttrs: boolean };
 export type StreamItem = StreamObject | StreamScalar;
 export type StreamValue = StreamObject | StreamArray | StreamScalar;
 export type StreamPlan = StreamObject | StreamArray;
@@ -54,6 +54,7 @@ interface ActiveArray {
 	path: StreamPath | null;
 	item: StreamItem | null;
 	output: any[];
+	needsAttrs: boolean;
 }
 
 type Frame =
@@ -65,7 +66,7 @@ type Frame =
 			navArraysByRel: Record<number, ActiveArray[]>;
 			descendantArrays: ActiveArray[];
 	  }
-	| { kind: 'array'; depth: number; output: any[]; path: StreamPath | null; item: StreamItem | null };
+	| { kind: 'array'; depth: number; output: any[]; path: StreamPath | null; item: StreamItem | null; needsAttrs: boolean };
 
 function writeSlot(slot: Slot, value: any): void {
 	if ('key' in slot) slot.output[slot.key] = value;
@@ -88,6 +89,16 @@ function trimWs(value: string): string {
 	return value.slice(start, end);
 }
 
+function planNeedsAttrs(plan: StreamValue | StreamItem): boolean {
+	if (plan.kind === 'object') return plan.members.some((member) => planNeedsAttrs(member.plan));
+	if (plan.kind === 'array') return false;
+	return plan.kind === 'path' && plan.segments.length === 0 && plan.attribute !== null;
+}
+
+function makeArray(path: StreamPath | null, item: StreamItem | null): StreamArray {
+	return { kind: 'array', path, item, needsAttrs: item ? planNeedsAttrs(item) : false };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Compiler                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -104,7 +115,7 @@ export function compileStreamPlan(template: TemplateNode): StreamPlan | null {
 	}
 
 	if (template.kind === 'array') {
-		if (template.items.length === 0) return { kind: 'array', path: null, item: null };
+		if (template.items.length === 0) return makeArray(null, null);
 		if (template.items.length !== 2) return null;
 		const pathNode = template.items[0];
 		const inner = template.items[1];
@@ -113,7 +124,7 @@ export function compileStreamPlan(template: TemplateNode): StreamPlan | null {
 		if (!path) return null;
 		const item = compileStreamItem(inner);
 		if (!item) return null;
-		return { kind: 'array', path, item };
+		return makeArray(path, item);
 	}
 
 	return null;
@@ -131,7 +142,7 @@ function compileStreamValue(template: TemplateNode, contextIsDocument: boolean):
 	}
 
 	if (template.kind === 'array') {
-		if (template.items.length === 0) return { kind: 'array', path: null, item: null };
+		if (template.items.length === 0) return makeArray(null, null);
 		if (template.items.length !== 2) return null;
 		const pathNode = template.items[0];
 		const inner = template.items[1];
@@ -140,7 +151,7 @@ function compileStreamValue(template: TemplateNode, contextIsDocument: boolean):
 		if (!path) return null;
 		const item = compileStreamItem(inner);
 		if (!item) return null;
-		return { kind: 'array', path, item };
+		return makeArray(path, item);
 	}
 
 	if (template.kind === 'string') return compileStreamScalar(template.value);
@@ -331,7 +342,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 				const arrayOutput: any[] = [];
 				output[member.key] = arrayOutput;
 				if (value.path !== null) {
-					const active: ActiveArray = { path: value.path, item: value.item, output: arrayOutput };
+					const active: ActiveArray = { path: value.path, item: value.item, output: arrayOutput, needsAttrs: value.needsAttrs };
 					if (value.path.kind === 'descendant') frame.descendantArrays.push(active);
 					else pushToMap(frame.navArraysByRel, value.path.segments.length, active);
 				}
@@ -341,7 +352,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		}
 	};
 
-	const createArrayItem = (array: ActiveArray, depth: number, attributes: Attr[]): void => {
+	const createArrayItem = (array: ActiveArray, depth: number, attributes: Attr[] | null): void => {
 		const item = array.item;
 		if (!item) return;
 
@@ -366,9 +377,10 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		else writeSlot(capture.slot, value === capture.booleanRight);
 	};
 
-	const processOpenElement = (depth: number, name: string, attributes: Attr[]): void => {
+	const collectMatches = (depth: number, name: string): { captures: PendingCapture[]; arrays: ActiveArray[] } => {
+		const captures: PendingCapture[] = [];
+		const arrays: ActiveArray[] = [];
 		const frameCount = frames.length;
-		const matches: ActiveArray[] = [];
 
 		for (let index = frameCount - 1; index >= 0; index--) {
 			const frame = frames[index];
@@ -377,11 +389,11 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 				if (frame.path !== null) {
 					if (frame.path.kind === 'descendant') {
 						if (name === frame.path.name && depth > frame.depth) {
-							matches.push({ path: frame.path, item: frame.item, output: frame.output });
+							arrays.push({ path: frame.path, item: frame.item, output: frame.output, needsAttrs: frame.needsAttrs });
 						}
 					} else if (frame.path.segments.length === depth - frame.depth) {
 						if (matchesSegments(frame.path.segments, frame.depth, depth, name)) {
-							matches.push({ path: frame.path, item: frame.item, output: frame.output });
+							arrays.push({ path: frame.path, item: frame.item, output: frame.output, needsAttrs: frame.needsAttrs });
 						}
 					}
 				}
@@ -389,25 +401,11 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 			}
 
 			const rel = depth - frame.depth;
-
-			const captures = frame.capturesByRel[rel];
-			if (captures) {
-				for (const capture of captures) {
+			const bucket = frame.capturesByRel[rel];
+			if (bucket) {
+				for (const capture of bucket) {
 					if (capture.targetSeen) continue;
-					if (!matchesSegments(capture.segments, frame.depth, depth, name)) continue;
-					capture.targetSeen = true;
-
-					if (capture.attribute !== null) {
-						const found = findAttr(attributes, capture.attribute);
-						writeSlot(
-							capture.slot,
-							capture.valueKind === 'number' ? (found === null ? Number.NaN : asDouble(found)) : found === null ? '' : found
-						);
-					} else {
-						if (capture.valueKind === 'number') writeSlot(capture.slot, 0);
-						else if (capture.valueKind === 'boolean') writeSlot(capture.slot, capture.booleanRight === '');
-						registerTextCapture(depth, capture);
-					}
+					if (matchesSegments(capture.segments, frame.depth, depth, name)) captures.push(capture);
 				}
 			}
 
@@ -415,19 +413,39 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 			if (navArrays) {
 				for (const array of navArrays) {
 					if (matchesSegments((array.path as { kind: 'nav'; segments: string[] }).segments, frame.depth, depth, name)) {
-						matches.push(array);
+						arrays.push(array);
 					}
 				}
 			}
 
 			for (const array of frame.descendantArrays) {
 				if (name === (array.path as { kind: 'descendant'; name: string }).name && depth > frame.depth) {
-					matches.push(array);
+					arrays.push(array);
 				}
 			}
 		}
 
-		for (const array of matches) createArrayItem(array, depth, attributes);
+		return { captures, arrays };
+	};
+
+	const applyMatches = (captures: PendingCapture[], arrays: ActiveArray[], depth: number, attributes: Attr[] | null): void => {
+		for (const capture of captures) {
+			capture.targetSeen = true;
+
+			if (capture.attribute !== null) {
+				const found = findAttr(attributes, capture.attribute);
+				writeSlot(
+					capture.slot,
+					capture.valueKind === 'number' ? (found === null ? Number.NaN : asDouble(found)) : found === null ? '' : found
+				);
+			} else {
+				if (capture.valueKind === 'number') writeSlot(capture.slot, 0);
+				else if (capture.valueKind === 'boolean') writeSlot(capture.slot, capture.booleanRight === '');
+				registerTextCapture(depth, capture);
+			}
+		}
+
+		for (const array of arrays) createArrayItem(array, depth, attributes);
 	};
 
 	const closeElement = (depth: number): void => {
@@ -438,11 +456,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		elementStack.pop();
 	};
 
-	const parseOpenTag = (): { name: string; attributes: Attr[]; selfClosing: boolean } | null => {
-		state.position++; // skip '<'
-		const name = readName(state);
-		if (name === null) return null;
-
+	const parseAttributes = (): { attributes: Attr[]; selfClosing: boolean } | null => {
 		const src = state.source;
 		const attributes: Attr[] = [];
 
@@ -453,12 +467,12 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 			const char = src.charCodeAt(state.position);
 			if (char === 0x3e) {
 				state.position++;
-				return { name, attributes, selfClosing: false };
+				return { attributes, selfClosing: false };
 			}
 			if (char === 0x2f) {
 				if (src.charCodeAt(state.position + 1) !== 0x3e) return null;
 				state.position += 2;
-				return { name, attributes, selfClosing: true };
+				return { attributes, selfClosing: true };
 			}
 			if (!hadWhitespace) return null;
 
@@ -485,13 +499,57 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		return null;
 	};
 
+	const skipTagEnd = (): boolean | null => {
+		const src = state.source;
+
+		while (state.position < length) {
+			const hadWhitespace = skipWs();
+			if (state.position >= length) return null;
+
+			const char = src.charCodeAt(state.position);
+			if (char === 0x3e) {
+				state.position++;
+				return false;
+			}
+			if (char === 0x2f) {
+				if (src.charCodeAt(state.position + 1) !== 0x3e) return null;
+				state.position += 2;
+				return true;
+			}
+			if (!hadWhitespace) return null;
+
+			const attributeName = readName(state);
+			if (attributeName === null) return null;
+			skipWhitespace(state);
+			if (src.charCodeAt(state.position) !== 0x3d) return null;
+			state.position++;
+			skipWhitespace(state);
+
+			const quoteCode = src.charCodeAt(state.position);
+			if (quoteCode !== 0x22 && quoteCode !== 0x27) return null;
+			state.position++;
+
+			// Scan to the closing quote while rejecting a raw '<' (no slice).
+			while (state.position < length) {
+				const code = src.charCodeAt(state.position);
+				if (code === quoteCode) break;
+				if (code === 0x3c) return null;
+				state.position++;
+			}
+			if (state.position >= length) return null;
+			state.position++; // closing quote
+		}
+
+		return null;
+	};
+
 	// Root frame.
 	if (plan.kind === 'object') {
 		const frame: Frame = { kind: 'object', depth: 0, output: {}, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
 		expandObject(plan, 0, null, frame.output, frame);
 		frames.push(frame);
 	} else {
-		frames.push({ kind: 'array', depth: 0, output: [], path: plan.path, item: plan.item });
+		frames.push({ kind: 'array', depth: 0, output: [], path: plan.path, item: plan.item, needsAttrs: plan.needsAttrs });
 	}
 
 	while (state.position < length) {
@@ -595,13 +653,33 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		}
 
 		state.position = position;
-		const element = parseOpenTag();
-		if (!element) return null;
+		state.position++; // skip '<'
+		const name = readName(state);
+		if (name === null) return null;
 		sawRootElement = true;
+
 		const depth = elementStack.length + 1;
-		elementStack.push(element.name);
-		processOpenElement(depth, element.name, element.attributes);
-		if (element.selfClosing) closeElement(depth);
+		elementStack.push(name);
+
+		const matches = collectMatches(depth, name);
+		const needAttrs =
+			matches.captures.some((capture) => capture.attribute !== null) || matches.arrays.some((array) => array.needsAttrs);
+
+		let attributes: Attr[] | null = null;
+		let selfClosing = false;
+		if (needAttrs) {
+			const parsed = parseAttributes();
+			if (!parsed) return null;
+			attributes = parsed.attributes;
+			selfClosing = parsed.selfClosing;
+		} else {
+			const skipped = skipTagEnd();
+			if (skipped === null) return null;
+			selfClosing = skipped;
+		}
+
+		applyMatches(matches.captures, matches.arrays, depth, attributes);
+		if (selfClosing) closeElement(depth);
 	}
 
 	if (elementStack.length !== 0) return null;
