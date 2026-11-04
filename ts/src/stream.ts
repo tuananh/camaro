@@ -266,7 +266,8 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	const state: ParseState = { source, position: 0, order: 0 };
 	const length = source.length;
 	const elementStack: string[] = [];
-	const textCaptures = new Map<number, PendingCapture[]>();
+	const textCaptures: Record<number, PendingCapture[]> = {};
+	let textCaptureCount = 0;
 	const objectFrames: ObjectFrame[] = [];
 	let rootArray: ArrayFrame | null = null;
 	const maxRel = collectMaxRel(plan, 0);
@@ -280,12 +281,10 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	};
 
 	const registerTextCapture = (depth: number, capture: PendingCapture): void => {
-		let list = textCaptures.get(depth);
-		if (!list) {
-			list = [];
-			textCaptures.set(depth, list);
-		}
-		list.push(capture);
+		const list = textCaptures[depth];
+		if (list) list.push(capture);
+		else textCaptures[depth] = [capture];
+		textCaptureCount++;
 	};
 
 	const pushToMap = <T,>(map: Record<number, T[]>, key: number, value: T): void => {
@@ -485,7 +484,11 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	};
 
 	const closeElement = (depth: number): void => {
-		textCaptures.delete(depth);
+		const list = textCaptures[depth];
+		if (list) {
+			textCaptureCount -= list.length;
+			delete textCaptures[depth];
+		}
 		while (objectFrames.length > 0 && objectFrames[objectFrames.length - 1].depth === depth) {
 			objectFrames.pop();
 		}
@@ -593,26 +596,29 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		if (source.charCodeAt(position) !== 0x3c /* < */) {
 			const nextTag = source.indexOf('<', position);
 			const end = nextTag === -1 ? length : nextTag;
-			const depth = elementStack.length;
-			const captures = textCaptures.get(depth);
 
-			if (captures && captures.length > 0) {
-				let hasText = false;
-				for (let index = position; index < end; index++) {
-					const code = source.charCodeAt(index);
-					if (code >= 128 || XML_WHITESPACE[code] === 0) {
-						hasText = true;
-						break;
+			if (textCaptureCount > 0) {
+				const depth = elementStack.length;
+				const captures = textCaptures[depth];
+
+				if (captures && captures.length > 0) {
+					let hasText = false;
+					for (let index = position; index < end; index++) {
+						const code = source.charCodeAt(index);
+						if (code >= 128 || XML_WHITESPACE[code] === 0) {
+							hasText = true;
+							break;
+						}
 					}
-				}
-				if (hasText) {
-					const raw = source.slice(position, end);
-					const value = raw.indexOf('&') === -1 ? raw : decodeEntities(raw);
-					if (value.length > 0) {
-						for (const capture of captures) {
-							if (capture.textCaptured) continue;
-							capture.textCaptured = true;
-							assignCaptureText(capture, value);
+					if (hasText) {
+						const raw = source.slice(position, end);
+						const value = raw.indexOf('&') === -1 ? raw : decodeEntities(raw);
+						if (value.length > 0) {
+							for (const capture of captures) {
+								if (capture.textCaptured) continue;
+								capture.textCaptured = true;
+								assignCaptureText(capture, value);
+							}
 						}
 					}
 				}
@@ -676,13 +682,14 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 				const value = source.slice(state.position, end);
 				state.position = end + 3;
 
-				const depth = elementStack.length;
-				const captures = textCaptures.get(depth);
-				if (captures) {
-					for (const capture of captures) {
-						if (capture.textCaptured) continue;
-						capture.textCaptured = true;
-						assignCaptureText(capture, value);
+				if (textCaptureCount > 0) {
+					const captures = textCaptures[elementStack.length];
+					if (captures) {
+						for (const capture of captures) {
+							if (capture.textCaptured) continue;
+							capture.textCaptured = true;
+							assignCaptureText(capture, value);
+						}
 					}
 				}
 				continue;
