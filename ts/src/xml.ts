@@ -56,9 +56,12 @@ const NAMED_ENTITIES: Record<string, string> = {
 const EMPTY_ATTRIBUTES: XmlAttribute[] = [];
 const EMPTY_CHILDREN: XmlNode[] = [];
 
-function isXmlWhitespaceCode(code: number): boolean {
-	return code === 0x20 || code === 0x09 || code === 0x0a || code === 0x0d;
-}
+// Whitespace lookup table used by the hot character-scanning loops.
+const XML_WHITESPACE = new Uint8Array(128);
+XML_WHITESPACE[0x20] = 1; // space
+XML_WHITESPACE[0x09] = 1; // tab
+XML_WHITESPACE[0x0a] = 1; // newline
+XML_WHITESPACE[0x0d] = 1; // carriage return
 
 // Lookup tables for XML names. A single array lookup replaces the several
 // comparisons that were previously executed per name character.
@@ -73,7 +76,7 @@ for (let code = 0; code < 128; code++) {
 		code === 0x3a; // :
 	const char = start || (code >= 0x30 && code <= 0x39) || code === 0x2e || code === 0x2d;
 	const stop =
-		isXmlWhitespaceCode(code) ||
+		XML_WHITESPACE[code] === 1 ||
 		code === 0x2f || // /
 		code === 0x3e || // >
 		code === 0x3d || // =
@@ -89,7 +92,8 @@ for (let code = 0; code < 128; code++) {
 
 function hasNonWhitespace(source: string, start: number, end: number): boolean {
 	for (let index = start; index < end; index++) {
-		if (!isXmlWhitespaceCode(source.charCodeAt(index))) return true;
+		const code = source.charCodeAt(index);
+		if (code >= 128 || XML_WHITESPACE[code] === 0) return true;
 	}
 	return false;
 }
@@ -180,7 +184,11 @@ function decodeEntities(raw: string): string {
 function skipWhitespace(state: ParseState): void {
 	const source = state.source;
 	let position = state.position;
-	while (position < source.length && isXmlWhitespaceCode(source.charCodeAt(position))) position++;
+	while (position < source.length) {
+		const code = source.charCodeAt(position);
+		if (code >= 128 || XML_WHITESPACE[code] !== 1) break;
+		position++;
+	}
 	state.position = position;
 }
 
