@@ -1,7 +1,11 @@
 'use strict';
 
 const fs = require('fs');
-const { prettyPrint } = require('..');
+const camaro = require('..');
+const camaroTs = require('../ts');
+const { prettyPrint } = camaro;
+const { prettyPrint: prettyPrintTs } = camaroTs;
+
 const prettyData = require('pretty-data');
 const prettifyXml = require('prettify-xml');
 
@@ -12,6 +16,7 @@ const xml = fs.readFileSync(__dirname + '/../examples/simple.xml', 'utf-8');
 
 	summary(() => {
 		bench('camaro v6', () => prettyPrint(xml));
+		bench('camaro v6 (ts)', () => prettyPrintTs(xml));
 		bench('pretty-data', () => prettyData.pd.xml(xml));
 		bench('prettifyXml', () => prettifyXml(xml));
 	});

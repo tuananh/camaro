@@ -1,0 +1,33 @@
+{
+	"name": "camaro-ts",
+	"version": "6.7.3",
+	"private": true,
+	"description": "TypeScript implementation of camaro",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"require": "./dist/index.js",
+			"default": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"src",
+		"README.md"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"pretest": "npm run build",
+		"test": "node run-tests.js"
+	},
+	"engines": {
+		"node": ">= 20.x"
+	},
+	"devDependencies": {
+		"tape": "^5.4.0",
+		"typescript": "^7.0.2"
+	},
+	"license": "MIT"
+}

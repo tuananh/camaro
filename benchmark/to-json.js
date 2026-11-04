@@ -1,11 +1,15 @@
 'use strict';
 
 const fs = require('fs');
-const { toJson } = require('..');
+const camaro = require('..');
+const camaroTs = require('../ts');
 const { XMLParser } = require('fast-xml-parser');
 const xml2js = require('xml2js');
 const xmljs = require('xml-js');
 const txml = require('txml');
+
+const { toJson, destroy } = camaro;
+const { toJson: toJsonTs } = camaroTs;
 
 const fastXmlParser = new XMLParser();
 const xml2jsParser = new xml2js.Parser();
@@ -18,6 +22,10 @@ const xml = fs.readFileSync(`${__dirname}/fixtures/60kb.xml`, 'utf-8');
 	summary(() => {
 		bench('camaro v6 toJson', function* () {
 			yield async () => await toJson(xml);
+		});
+
+		bench('camaro v6 toJson (ts)', function* () {
+			yield async () => await toJsonTs(xml);
 		});
 
 		bench('txml', () => {
@@ -38,6 +46,7 @@ const xml = fs.readFileSync(`${__dirname}/fixtures/60kb.xml`, 'utf-8');
 	});
 
 	await run();
+	await destroy();
 })().catch((err) => {
 	console.error(err);
 	process.exitCode = 1;

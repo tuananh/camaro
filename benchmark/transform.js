@@ -1,11 +1,15 @@
 'use strict';
 
 const fs = require('fs');
-const { transform, destroy } = require('..');
+const camaro = require('..');
+const camaroTs = require('../ts');
 const { XMLParser } = require('fast-xml-parser');
 const xml2js = require('xml2js');
 const xmljs = require('xml-js');
 const txml = require('txml');
+
+const { transform, destroy } = camaro;
+const { transform: transformTs, destroy: destroyTs } = camaroTs;
 
 const fastXmlParser = new XMLParser();
 const xml2jsParser = new xml2js.Parser();
@@ -46,6 +50,10 @@ const template = {
 			yield async () => await transform(xml, template);
 		});
 
+		bench('camaro v6 (ts)', function* () {
+			yield async () => await transformTs(xml, template);
+		});
+
 		bench('txml', () => {
 			txml.parse(xml);
 		});
@@ -65,6 +73,7 @@ const template = {
 
 	await run();
 	await destroy();
+	await destroyTs();
 })().catch((err) => {
 	console.error(err);
 	process.exitCode = 1;
