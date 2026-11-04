@@ -15,7 +15,6 @@ import {
 	readName,
 	skipDeclaration,
 	skipName,
-	skipWhitespace,
 	XML_WHITESPACE,
 } from './xml';
 import { asDouble, isSimpleNavPath, parseNavPath, TemplateNode } from './template';
@@ -85,6 +84,16 @@ function findAttr(attributes: Attr[] | null, name: string): string | null {
 		if (attribute.name === name) return attribute.value;
 	}
 	return null;
+}
+
+/** Advance past XML whitespace; returns the new position (V8-inlinable). */
+function skipSpaces(source: string, position: number, length: number): number {
+	while (position < length) {
+		const code = source.charCodeAt(position);
+		if (code >= 128 || XML_WHITESPACE[code] !== 1) break;
+		position++;
+	}
+	return position;
 }
 
 function trimWs(value: string): string {
@@ -273,12 +282,6 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	const maxRel = collectMaxRel(plan, 0);
 
 	let sawRootElement = false;
-
-	const skipWs = (): boolean => {
-		const before = state.position;
-		skipWhitespace(state);
-		return state.position > before;
-	};
 
 	const registerTextCapture = (depth: number, capture: PendingCapture): void => {
 		const list = textCaptures[depth];
@@ -484,10 +487,12 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	};
 
 	const closeElement = (depth: number): void => {
-		const list = textCaptures[depth];
-		if (list) {
-			textCaptureCount -= list.length;
-			delete textCaptures[depth];
+		if (textCaptureCount > 0) {
+			const list = textCaptures[depth];
+			if (list) {
+				textCaptureCount -= list.length;
+				delete textCaptures[depth];
+			}
 		}
 		while (objectFrames.length > 0 && objectFrames[objectFrames.length - 1].depth === depth) {
 			objectFrames.pop();
@@ -500,7 +505,9 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		const attributes: Attr[] = [];
 
 		while (state.position < length) {
-			const hadWhitespace = skipWs();
+			const beforeWs = state.position;
+			state.position = skipSpaces(src, state.position, length);
+			const hadWhitespace = state.position > beforeWs;
 			if (state.position >= length) return null;
 
 			const char = src.charCodeAt(state.position);
@@ -517,10 +524,10 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 
 			const attributeName = readName(state);
 			if (attributeName === null) return null;
-			skipWhitespace(state);
+			state.position = skipSpaces(src, state.position, length);
 			if (src.charCodeAt(state.position) !== 0x3d) return null;
 			state.position++;
-			skipWhitespace(state);
+			state.position = skipSpaces(src, state.position, length);
 
 			const quoteCode = src.charCodeAt(state.position);
 			if (quoteCode !== 0x22 && quoteCode !== 0x27) return null;
@@ -542,7 +549,9 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		const src = state.source;
 
 		while (state.position < length) {
-			const hadWhitespace = skipWs();
+			const beforeWs = state.position;
+			state.position = skipSpaces(src, state.position, length);
+			const hadWhitespace = state.position > beforeWs;
 			if (state.position >= length) return null;
 
 			const char = src.charCodeAt(state.position);
@@ -558,10 +567,10 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 			if (!hadWhitespace) return null;
 
 			if (!skipName(state)) return null;
-			skipWhitespace(state);
+			state.position = skipSpaces(src, state.position, length);
 			if (src.charCodeAt(state.position) !== 0x3d) return null;
 			state.position++;
-			skipWhitespace(state);
+			state.position = skipSpaces(src, state.position, length);
 
 			const quoteCode = src.charCodeAt(state.position);
 			if (quoteCode !== 0x22 && quoteCode !== 0x27) return null;
@@ -658,7 +667,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 
 			state.position = closeStart;
 			const name = readName(state);
-			skipWhitespace(state);
+			state.position = skipSpaces(source, state.position, length);
 			if (name === null || source.charCodeAt(state.position) !== 0x3e) return null;
 			state.position++;
 			if (elementStack.length === 0 || current !== name) return null;
