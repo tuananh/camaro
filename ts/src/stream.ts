@@ -57,16 +57,21 @@ interface ActiveArray {
 	needsAttrs: boolean;
 }
 
-type Frame =
-	| {
-			kind: 'object';
-			depth: number;
-			output: Record<string, any>;
-			capturesByRel: Record<number, PendingCapture[]>;
-			navArraysByRel: Record<number, ActiveArray[]>;
-			descendantArrays: ActiveArray[];
-	  }
-	| { kind: 'array'; depth: number; output: any[]; path: StreamPath | null; item: StreamItem | null; needsAttrs: boolean };
+interface ObjectFrame {
+	depth: number;
+	output: Record<string, any>;
+	capturesByRel: Record<number, PendingCapture[]>;
+	navArraysByRel: Record<number, ActiveArray[]>;
+	descendantArrays: ActiveArray[];
+}
+
+interface ArrayFrame {
+	depth: number;
+	output: any[];
+	path: StreamPath | null;
+	item: StreamItem | null;
+	needsAttrs: boolean;
+}
 
 function writeSlot(slot: Slot, value: any): void {
 	if ('key' in slot) slot.output[slot.key] = value;
@@ -246,7 +251,8 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	const length = source.length;
 	const elementStack: string[] = [];
 	const textCaptures = new Map<number, PendingCapture[]>();
-	const frames: Frame[] = [];
+	const objectFrames: ObjectFrame[] = [];
+	let rootArray: ArrayFrame | null = null;
 
 	let sawRootElement = false;
 
@@ -285,7 +291,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		scalar: StreamScalar,
 		contextDepth: number,
 		attributes: Attr[] | null,
-		frame: Extract<Frame, { kind: 'object' }>
+		frame: ObjectFrame
 	): void => {
 		if (scalar.kind === 'const') {
 			writeSlot(slot, scalar.value);
@@ -330,7 +336,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		contextDepth: number,
 		attributes: Attr[] | null,
 		output: Record<string, any>,
-		frame: Extract<Frame, { kind: 'object' }>
+		frame: ObjectFrame
 	): void => {
 		for (const member of plan.members) {
 			const value = member.plan;
@@ -359,15 +365,15 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		if (item.kind === 'object') {
 			const output: Record<string, any> = {};
 			array.output.push(output);
-			const frame: Frame = { kind: 'object', depth, output, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
+			const frame: ObjectFrame = { depth, output, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
 			expandObject(item, depth, attributes, output, frame);
-			frames.push(frame);
+			objectFrames.push(frame);
 		} else {
 			const index = array.output.length;
 			array.output.push(undefined);
-			const frame: Frame = { kind: 'object', depth, output: {} as any, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
+			const frame: ObjectFrame = { depth, output: {} as any, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
 			addScalar({ array: array.output, index }, item, depth, attributes, frame);
-			frames.push(frame);
+			objectFrames.push(frame);
 		}
 	};
 
@@ -377,35 +383,37 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		else writeSlot(capture.slot, value === capture.booleanRight);
 	};
 
-	const collectMatches = (depth: number, name: string): { captures: PendingCapture[]; arrays: ActiveArray[] } => {
+	const collectMatches = (depth: number, name: string): { captures: PendingCapture[]; arrays: ActiveArray[]; needAttrs: boolean } => {
 		const captures: PendingCapture[] = [];
 		const arrays: ActiveArray[] = [];
-		const frameCount = frames.length;
+		let needAttrs = false;
 
-		for (let index = frameCount - 1; index >= 0; index--) {
-			const frame = frames[index];
-
-			if (frame.kind === 'array') {
-				if (frame.path !== null) {
-					if (frame.path.kind === 'descendant') {
-						if (name === frame.path.name && depth > frame.depth) {
-							arrays.push({ path: frame.path, item: frame.item, output: frame.output, needsAttrs: frame.needsAttrs });
-						}
-					} else if (frame.path.segments.length === depth - frame.depth) {
-						if (matchesSegments(frame.path.segments, frame.depth, depth, name)) {
-							arrays.push({ path: frame.path, item: frame.item, output: frame.output, needsAttrs: frame.needsAttrs });
-						}
-					}
+		if (rootArray !== null && rootArray.path !== null) {
+			if (rootArray.path.kind === 'descendant') {
+				if (name === rootArray.path.name && depth > rootArray.depth) {
+					arrays.push({ path: rootArray.path, item: rootArray.item, output: rootArray.output, needsAttrs: rootArray.needsAttrs });
+					if (rootArray.needsAttrs) needAttrs = true;
 				}
-				continue;
+			} else if (rootArray.path.segments.length === depth - rootArray.depth) {
+				if (matchesSegments(rootArray.path.segments, rootArray.depth, depth, name)) {
+					arrays.push({ path: rootArray.path, item: rootArray.item, output: rootArray.output, needsAttrs: rootArray.needsAttrs });
+					if (rootArray.needsAttrs) needAttrs = true;
+				}
 			}
+		}
 
+		for (let index = objectFrames.length - 1; index >= 0; index--) {
+			const frame = objectFrames[index];
 			const rel = depth - frame.depth;
+
 			const bucket = frame.capturesByRel[rel];
 			if (bucket) {
 				for (const capture of bucket) {
 					if (capture.targetSeen) continue;
-					if (matchesSegments(capture.segments, frame.depth, depth, name)) captures.push(capture);
+					if (matchesSegments(capture.segments, frame.depth, depth, name)) {
+						captures.push(capture);
+						if (capture.attribute !== null) needAttrs = true;
+					}
 				}
 			}
 
@@ -414,6 +422,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 				for (const array of navArrays) {
 					if (matchesSegments((array.path as { kind: 'nav'; segments: string[] }).segments, frame.depth, depth, name)) {
 						arrays.push(array);
+						if (array.needsAttrs) needAttrs = true;
 					}
 				}
 			}
@@ -421,11 +430,12 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 			for (const array of frame.descendantArrays) {
 				if (name === (array.path as { kind: 'descendant'; name: string }).name && depth > frame.depth) {
 					arrays.push(array);
+					if (array.needsAttrs) needAttrs = true;
 				}
 			}
 		}
 
-		return { captures, arrays };
+		return { captures, arrays, needAttrs };
 	};
 
 	const applyMatches = (captures: PendingCapture[], arrays: ActiveArray[], depth: number, attributes: Attr[] | null): void => {
@@ -450,8 +460,8 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 
 	const closeElement = (depth: number): void => {
 		textCaptures.delete(depth);
-		while (frames.length > 1 && frames[frames.length - 1].depth === depth) {
-			frames.pop();
+		while (objectFrames.length > 0 && objectFrames[objectFrames.length - 1].depth === depth) {
+			objectFrames.pop();
 		}
 		elementStack.pop();
 	};
@@ -545,11 +555,11 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 
 	// Root frame.
 	if (plan.kind === 'object') {
-		const frame: Frame = { kind: 'object', depth: 0, output: {}, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
+		const frame: ObjectFrame = { depth: 0, output: {}, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
 		expandObject(plan, 0, null, frame.output, frame);
-		frames.push(frame);
+		objectFrames.push(frame);
 	} else {
-		frames.push({ kind: 'array', depth: 0, output: [], path: plan.path, item: plan.item, needsAttrs: plan.needsAttrs });
+		rootArray = { depth: 0, output: [], path: plan.path, item: plan.item, needsAttrs: plan.needsAttrs };
 	}
 
 	while (state.position < length) {
@@ -668,12 +678,10 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		elementStack.push(name);
 
 		const matches = collectMatches(depth, name);
-		const needAttrs =
-			matches.captures.some((capture) => capture.attribute !== null) || matches.arrays.some((array) => array.needsAttrs);
 
 		let attributes: Attr[] | null = null;
 		let selfClosing = false;
-		if (needAttrs) {
+		if (matches.needAttrs) {
 			const parsed = parseAttributes();
 			if (!parsed) return null;
 			attributes = parsed.attributes;
@@ -691,5 +699,5 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	if (elementStack.length !== 0) return null;
 	if (!sawRootElement) return null;
 
-	return frames[0].kind === 'object' ? frames[0].output : frames[0].output;
+	return rootArray !== null ? rootArray.output : objectFrames[0].output;
 }
