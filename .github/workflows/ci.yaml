@@ -21,3 +21,14 @@ jobs:
         run: npm install
       - name: Test
         run: npm test
+
+      # typescript version
+      - name: Install TypeScript Dependencies
+        working-directory: ts
+        run: npm ci
+      - name: Build TypeScript
+        working-directory: ts
+        run: npm run build
+      - name: Test TypeScript
+        working-directory: ts
+        run: npm test
