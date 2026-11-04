@@ -90,14 +90,6 @@ for (let code = 0; code < 128; code++) {
 	NAME_END[code] = stop || !char ? 1 : 0;
 }
 
-function hasNonWhitespace(source: string, start: number, end: number): boolean {
-	for (let index = start; index < end; index++) {
-		const code = source.charCodeAt(index);
-		if (code >= 128 || XML_WHITESPACE[code] === 0) return true;
-	}
-	return false;
-}
-
 function makeNode(
 	state: ParseState,
 	type: XmlNodeType,
@@ -347,7 +339,18 @@ export function parseXml(source: string): XmlDocument | null {
 			// pugixml does before expanding character references. Character data
 			// directly under the document node is not retained either.
 			const parent = stack[stack.length - 1];
-			if (parent.type !== 'document' && hasNonWhitespace(source, position, end)) {
+			let hasText = false;
+			if (parent.type !== 'document') {
+				for (let index = position; index < end; index++) {
+					const code = source.charCodeAt(index);
+					if (code >= 128 || XML_WHITESPACE[code] === 0) {
+						hasText = true;
+						break;
+					}
+				}
+			}
+
+			if (hasText) {
 				const raw = source.slice(position, end);
 				const value = raw.indexOf('&') === -1 ? raw : decodeEntities(raw);
 				if (value.length > 0) appendChild(parent, makeNode(state, 'text', '', value, parent));
