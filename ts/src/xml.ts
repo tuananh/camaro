@@ -207,6 +207,29 @@ export function readName(state: ParseState): string | null {
 	return source.slice(start, position);
 }
 
+/**
+ * Validate and skip a name without allocating the substring. Used by the
+ * streaming fast path when it only needs to reject malformed attribute names.
+ */
+export function skipName(state: ParseState): boolean {
+	const source = state.source;
+	const start = state.position;
+
+	let code = source.charCodeAt(start);
+	if (code !== code) return false;
+	if (code < 128 && NAME_START[code] === 0) return false;
+
+	let position = start + 1;
+	code = source.charCodeAt(position);
+	while (code >= 128 || NAME_END[code] === 0) {
+		position++;
+		code = source.charCodeAt(position);
+	}
+
+	state.position = position;
+	return true;
+}
+
 function skipWhitespaceCount(state: ParseState): number {
 	const start = state.position;
 	skipWhitespace(state);

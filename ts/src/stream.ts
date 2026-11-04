@@ -14,6 +14,7 @@ import {
 	ParseState,
 	readName,
 	skipDeclaration,
+	skipName,
 	skipWhitespace,
 	XML_WHITESPACE,
 } from './xml';
@@ -102,6 +103,21 @@ function planNeedsAttrs(plan: StreamValue | StreamItem): boolean {
 
 function makeArray(path: StreamPath | null, item: StreamItem | null): StreamArray {
 	return { kind: 'array', path, item, needsAttrs: item ? planNeedsAttrs(item) : false };
+}
+
+/** Maximum relative depth used by any non-descendant path (scalar or array). */
+function collectMaxRel(plan: StreamValue | StreamItem, max: number): number {
+	if (plan.kind === 'object') {
+		for (const member of plan.members) max = collectMaxRel(member.plan, max);
+	} else if (plan.kind === 'array') {
+		if (plan.path !== null && plan.path.kind === 'nav') max = Math.max(max, plan.path.segments.length);
+		if (plan.item !== null) max = collectMaxRel(plan.item, max);
+	} else if (plan.kind === 'path') {
+		if (plan.segments.length > 0) max = Math.max(max, plan.segments.length);
+	} else if (plan.kind === 'boolean') {
+		max = Math.max(max, 1);
+	}
+	return max;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -253,6 +269,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 	const textCaptures = new Map<number, PendingCapture[]>();
 	const objectFrames: ObjectFrame[] = [];
 	let rootArray: ArrayFrame | null = null;
+	const maxRel = collectMaxRel(plan, 0);
 
 	let sawRootElement = false;
 
@@ -402,9 +419,25 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 			}
 		}
 
+		// Descendant arrays live only on the root object frame and match at
+		// any depth, so check them outside the relative-depth loop.
+		if (objectFrames.length > 0) {
+			const rootFrame = objectFrames[0];
+			for (const array of rootFrame.descendantArrays) {
+				if (name === (array.path as { kind: 'descendant'; name: string }).name && depth > rootFrame.depth) {
+					arrays.push(array);
+					if (array.needsAttrs) needAttrs = true;
+				}
+			}
+		}
+
+		// Child/descendant navigation only matches the innermost frames: the
+		// relative depth grows as we move outward, so stop once it exceeds the
+		// deepest path in the template.
 		for (let index = objectFrames.length - 1; index >= 0; index--) {
 			const frame = objectFrames[index];
 			const rel = depth - frame.depth;
+			if (rel > maxRel) break;
 
 			const bucket = frame.capturesByRel[rel];
 			if (bucket) {
@@ -424,13 +457,6 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 						arrays.push(array);
 						if (array.needsAttrs) needAttrs = true;
 					}
-				}
-			}
-
-			for (const array of frame.descendantArrays) {
-				if (name === (array.path as { kind: 'descendant'; name: string }).name && depth > frame.depth) {
-					arrays.push(array);
-					if (array.needsAttrs) needAttrs = true;
 				}
 			}
 		}
@@ -528,8 +554,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 			}
 			if (!hadWhitespace) return null;
 
-			const attributeName = readName(state);
-			if (attributeName === null) return null;
+			if (!skipName(state)) return null;
 			skipWhitespace(state);
 			if (src.charCodeAt(state.position) !== 0x3d) return null;
 			state.position++;
