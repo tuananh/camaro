@@ -803,7 +803,8 @@ function axisItems(item: XPathItem, axis: Axis): XPathItem[] {
 		case 'following': {
 			const node = itemNode(item);
 			if (!node) return [];
-			const descendants = new Set(allDescendants(node));
+			const descendantsGeneration = nextSeenGeneration();
+			for (const descendant of allDescendants(node)) markSeenOrder(descendantsGeneration, descendant.order);
 			const root = rootNode(node);
 			const result: XPathItem[] = [];
 			const all = allDescendants(root);
@@ -814,7 +815,7 @@ function axisItems(item: XPathItem, axis: Axis): XPathItem[] {
 					continue;
 				}
 				if (!seen) continue;
-				if (descendants.has(candidate)) continue;
+				if (isSeenOrder(descendantsGeneration, candidate.order)) continue;
 				result.push(nodeItem(candidate));
 			}
 			return result;
@@ -823,17 +824,17 @@ function axisItems(item: XPathItem, axis: Axis): XPathItem[] {
 		case 'preceding': {
 			const node = itemNode(item);
 			if (!node) return [];
-			const ancestors = new Set<XmlNode>();
+			const ancestorsGeneration = nextSeenGeneration();
 			let current: XmlNode | null = node.parent;
 			while (current) {
-				ancestors.add(current);
+				markSeenOrder(ancestorsGeneration, current.order);
 				current = current.parent;
 			}
 			const root = rootNode(node);
 			const result: XPathItem[] = [];
 			for (const candidate of allDescendants(root)) {
 				if (candidate === node) break;
-				if (ancestors.has(candidate)) continue;
+				if (isSeenOrder(ancestorsGeneration, candidate.order)) continue;
 				result.push(nodeItem(candidate));
 			}
 			return result.reverse();
@@ -844,13 +845,43 @@ function axisItems(item: XPathItem, axis: Axis): XPathItem[] {
 	}
 }
 
+// Node/attribute orders are dense integers, so a flat "seen" array with a
+// generation stamp beats a hash Set: no hashing, no per-call allocation,
+// O(1) probe. Callers take a fresh generation and reuse the same buffer.
+let seenOrders = new Uint32Array(256);
+let seenGeneration = 1;
+
+function nextSeenGeneration(): number {
+	let generation = seenGeneration + 1;
+	if (generation === 0xffffffff) {
+		seenOrders.fill(0);
+		generation = 1;
+	}
+	seenGeneration = generation;
+	return generation;
+}
+
+function markSeenOrder(generation: number, order: number): void {
+	if (order >= seenOrders.length) {
+		const grown = new Uint32Array(Math.max(order + 1, seenOrders.length * 2));
+		grown.set(seenOrders);
+		seenOrders = grown;
+	}
+	seenOrders[order] = generation;
+}
+
+function isSeenOrder(generation: number, order: number): boolean {
+	return order < seenOrders.length && seenOrders[order] === generation;
+}
+
 function dedupe(items: XPathItem[]): XPathItem[] {
-	const seen = new Set<number>();
+	if (items.length < 2) return items;
+	const generation = nextSeenGeneration();
 	const result: XPathItem[] = [];
 	for (const item of items) {
 		const key = item.kind === 'node' ? item.node.order : item.attribute.order;
-		if (seen.has(key)) continue;
-		seen.add(key);
+		if (isSeenOrder(generation, key)) continue;
+		markSeenOrder(generation, key);
 		result.push(item);
 	}
 	return result;
