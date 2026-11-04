@@ -41,6 +41,8 @@ export interface ParseState {
 	source: string;
 	position: number;
 	order: number;
+	/** Cheap hash of the name most recently returned by readName. */
+	nameHash: number;
 }
 
 const NAMED_ENTITIES: Record<string, string> = {
@@ -197,6 +199,7 @@ export function readName(state: ParseState): string | null {
 	if (code !== code) return null; // NaN: past end of input
 	if (code < 128 && NAME_START[code] === 0) return null;
 
+	const first = code;
 	let position = start + 1;
 	code = source.charCodeAt(position);
 	while (code > 64 || NAME_END[code] === 0) {
@@ -205,6 +208,9 @@ export function readName(state: ParseState): string | null {
 	}
 
 	state.position = position;
+	// Bloom-filter hash, computed here so the parser never has to rescan the
+	// name just to test whether it can match anything.
+	state.nameHash = (first * 31 + source.charCodeAt(position - 1) * 17 + (position - start)) & 127;
 	return source.slice(start, position);
 }
 
@@ -342,7 +348,7 @@ function parseStartTag(
 export function parseXml(source: string): XmlDocument | null {
 	if (source.charCodeAt(0) === 0xfeff) source = source.slice(1);
 
-	const state: ParseState = { source, position: 0, order: 0 };
+	const state: ParseState = { source, position: 0, order: 0, nameHash: 0 };
 	const document = makeNode(state, 'document', '', '', null) as XmlDocument;
 	const stack: XmlNode[] = [document];
 

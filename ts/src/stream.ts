@@ -59,8 +59,8 @@ interface ActiveArray {
 interface ObjectFrame {
 	depth: number;
 	output: Record<string, any>;
-	capturesByRel: Record<number, PendingCapture[]>;
-	navArraysByRel: Record<number, ActiveArray[]>;
+	capturesByRel: (PendingCapture[] | undefined)[];
+	navArraysByRel: (ActiveArray[] | undefined)[];
 	descendantArrays: ActiveArray[];
 }
 
@@ -138,31 +138,23 @@ const NAME_BITS_SIZE = 16; // 128 bits
 
 const planNameBits = new WeakMap<object, Uint8Array>();
 
-function nameHashFirst(name: string): number {
+// Must stay in sync with the hash computed by readName() in ./xml.
+function nameHash(name: string): number {
 	const len = name.length;
-	return (name.charCodeAt(0) * 31 + len) & 127;
-}
-
-function nameHashLast(name: string): number {
-	const len = name.length;
-	return (name.charCodeAt(len - 1) * 17 + len * 7) & 127;
+	return (name.charCodeAt(0) * 31 + name.charCodeAt(len - 1) * 17 + len) & 127;
 }
 
 function addNameBit(bits: Uint8Array, name: string): void {
-	const len = name.length;
-	if (len === 0) return;
-	const h1 = nameHashFirst(name);
-	const h2 = nameHashLast(name);
-	bits[h1 >>> 3] |= 1 << (h1 & 7);
+	if (name.length === 0) return;
+	const h = nameHash(name);
+	const h2 = (h * 5 + 11) & 127;
+	bits[h >>> 3] |= 1 << (h & 7);
 	bits[h2 >>> 3] |= 1 << (h2 & 7);
 }
 
-function nameBitsHave(bits: Uint8Array, name: string): boolean {
-	const len = name.length;
-	if (len === 0) return true;
-	const h1 = nameHashFirst(name);
-	const h2 = nameHashLast(name);
-	return (bits[h1 >>> 3] & (1 << (h1 & 7))) !== 0 && (bits[h2 >>> 3] & (1 << (h2 & 7))) !== 0;
+function nameBitsHave(bits: Uint8Array, h: number): boolean {
+	const h2 = (h * 5 + 11) & 127;
+	return (bits[h >>> 3] & (1 << (h & 7))) !== 0 && (bits[h2 >>> 3] & (1 << (h2 & 7))) !== 0;
 }
 
 function collectNameBits(plan: StreamValue | StreamItem, bits: Uint8Array): void {
@@ -334,7 +326,7 @@ function compileStreamScalar(value: string): StreamScalar | null {
 export function streamTransform(source: string, plan: StreamPlan): unknown {
 	if (source.charCodeAt(0) === 0xfeff) source = source.slice(1);
 
-	const state: ParseState = { source, position: 0, order: 0 };
+	const state: ParseState = { source, position: 0, order: 0, nameHash: 0 };
 	const length = source.length;
 	const elementStack: string[] = [];
 	const textCaptures: Record<number, PendingCapture[]> = {};
@@ -353,10 +345,10 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		textCaptureCount++;
 	};
 
-	const pushToMap = <T,>(map: Record<number, T[]>, key: number, value: T): void => {
-		const list = map[key];
+	const pushToBucket = <T,>(buckets: (T[] | undefined)[], key: number, value: T): void => {
+		const list = buckets[key];
 		if (list) list.push(value);
-		else map[key] = [value];
+		else buckets[key] = [value];
 	};
 
 	const matchesSegments = (segments: string[], contextDepth: number, depth: number, name: string): boolean => {
@@ -390,7 +382,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 				return;
 			}
 			writeSlot(slot, scalar.valueKind === 'number' ? Number.NaN : '');
-			pushToMap(frame.capturesByRel, scalar.segments.length, {
+			pushToBucket(frame.capturesByRel, scalar.segments.length, {
 				slot,
 				segments: scalar.segments,
 				attribute: scalar.attribute,
@@ -402,7 +394,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		}
 		// boolean
 		writeSlot(slot, false);
-		pushToMap(frame.capturesByRel, 1, {
+		pushToBucket(frame.capturesByRel, 1, {
 			slot,
 			segments: [scalar.left],
 			attribute: null,
@@ -432,7 +424,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 				if (value.path !== null) {
 					const active: ActiveArray = { path: value.path, item: value.item, output: arrayOutput, needsAttrs: value.needsAttrs };
 					if (value.path.kind === 'descendant') frame.descendantArrays.push(active);
-					else pushToMap(frame.navArraysByRel, value.path.segments.length, active);
+					else pushToBucket(frame.navArraysByRel, value.path.segments.length, active);
 				}
 			} else {
 				addScalar({ output, key: member.key }, value, contextDepth, attributes, frame);
@@ -447,13 +439,25 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		if (item.kind === 'object') {
 			const output: Record<string, any> = {};
 			array.output.push(output);
-			const frame: ObjectFrame = { depth, output, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
+			const frame: ObjectFrame = {
+				depth,
+				output,
+				capturesByRel: new Array(maxRel + 1),
+				navArraysByRel: new Array(maxRel + 1),
+				descendantArrays: [],
+			};
 			expandObject(item, depth, attributes, output, frame);
 			objectFrames.push(frame);
 		} else {
 			const index = array.output.length;
 			array.output.push(undefined);
-			const frame: ObjectFrame = { depth, output: {} as any, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
+			const frame: ObjectFrame = {
+				depth,
+				output: {} as any,
+				capturesByRel: new Array(maxRel + 1),
+				navArraysByRel: new Array(maxRel + 1),
+				descendantArrays: [],
+			};
 			addScalar({ array: array.output, index }, item, depth, attributes, frame);
 			objectFrames.push(frame);
 		}
@@ -650,7 +654,13 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 
 	// Root frame.
 	if (plan.kind === 'object') {
-		const frame: ObjectFrame = { depth: 0, output: {}, capturesByRel: {}, navArraysByRel: {}, descendantArrays: [] };
+		const frame: ObjectFrame = {
+			depth: 0,
+			output: {},
+			capturesByRel: new Array(maxRel + 1),
+			navArraysByRel: new Array(maxRel + 1),
+			descendantArrays: [],
+		};
 		expandObject(plan, 0, null, frame.output, frame);
 		objectFrames.push(frame);
 	} else {
@@ -779,7 +789,7 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		let attributes: Attr[] | null = null;
 		let selfClosing = false;
 
-		if (nameBitsHave(nameBits, name)) {
+		if (nameBitsHave(nameBits, state.nameHash)) {
 			const matches = collectMatches(depth, name);
 			if (matches.needAttrs) {
 				const parsed = parseAttributes();
