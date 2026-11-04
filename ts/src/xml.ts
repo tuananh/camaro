@@ -368,20 +368,20 @@ export function parseXml(source: string): XmlDocument | null {
 		if (next === 0x2f) {
 			const current = stack[stack.length - 1];
 			const closeStart = position + 2;
-			const closeEnd = source.indexOf('>', closeStart);
 
-			// Fast path for the normal `</name>` form: compare the source
-			// range with the open element's name without allocating a string.
-			if (
-				closeEnd !== -1 &&
-				current.type === 'element' &&
-				closeEnd - closeStart === current.name.length &&
-				source.indexOf(current.name, closeStart) === closeStart
-			) {
-				state.position = closeEnd + 1;
-				stack.pop();
-				continue;
+			// Fast path for the exact `</name>` form: check the '>' position
+			// first, then the name range (no allocation).
+			if (current.type === 'element') {
+				const nameLen = current.name.length;
+				if (source.charCodeAt(closeStart + nameLen) === 0x3e && source.indexOf(current.name, closeStart) === closeStart) {
+					state.position = closeStart + nameLen + 1;
+					stack.pop();
+					continue;
+				}
 			}
+
+			const closeEnd = source.indexOf('>', closeStart);
+			if (closeEnd === -1) return null;
 
 			state.position = closeStart;
 			const name = readName(state);

@@ -600,14 +600,20 @@ export function streamTransform(source: string, plan: StreamPlan): unknown {
 		if (next === 0x2f) {
 			const current = elementStack[elementStack.length - 1];
 			const closeStart = position + 2;
+
+			// Fast path for the exact `</name>` form: check the '>' position
+			// first (cheap, rejects whitespace/mismatch), then the name range.
+			if (elementStack.length > 0) {
+				const nameLen = current.length;
+				if (source.charCodeAt(closeStart + nameLen) === 0x3e && source.indexOf(current, closeStart) === closeStart) {
+					state.position = closeStart + nameLen + 1;
+					closeElement(elementStack.length);
+					continue;
+				}
+			}
+
 			const closeEnd = source.indexOf('>', closeStart);
 			if (closeEnd === -1) return null;
-
-			if (elementStack.length > 0 && closeEnd - closeStart === current.length && source.indexOf(current, closeStart) === closeStart) {
-				state.position = closeEnd + 1;
-				closeElement(elementStack.length);
-				continue;
-			}
 
 			state.position = closeStart;
 			const name = readName(state);
