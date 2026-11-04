@@ -1,8 +1,24 @@
 name: Publish Package to npmjs
 on:
   push:
+    # `v1.2.3`          -> camaro only
+    # `camaro-ts-v1.2.3` -> camaro-ts only
     tags:
       - 'v*'
+      - 'camaro-ts-v*'
+  # Allows publishing either package (or both) by hand from the Actions tab.
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package to publish
+        required: true
+        default: camaro
+        type: choice
+        options:
+          - camaro
+          - camaro-ts
+          - both
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,8 +31,54 @@ jobs:
         with:
           node-version: 'lts/*'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm install
-      - name: Publish to npm
+
+      # ------------------------------------------------------------- camaro
+      - name: Install Dependencies
+        if: (github.event_name == 'push' && startsWith(github.ref_name, 'v')) || github.event.inputs.package == 'camaro' || github.event.inputs.package == 'both'
+        run: npm install
+
+      - name: Check camaro version matches the tag
+        if: github.event_name == 'push' && startsWith(github.ref_name, 'v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+
+      - name: Publish camaro to npm
+        if: (github.event_name == 'push' && startsWith(github.ref_name, 'v')) || github.event.inputs.package == 'camaro' || github.event.inputs.package == 'both'
+        run: |
+          if node -e "process.exit(/-/.test(require('./package.json').version) ? 0 : 1)"; then
+            echo "Prerelease version; publishing with dist-tag: next"
+            npm publish --provenance --access public --tag next
+          else
+            npm publish --provenance --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # ---------------------------------------------------------- camaro-ts
+      - name: Install TypeScript Dependencies
+        if: (github.event_name == 'push' && startsWith(github.ref_name, 'camaro-ts-v')) || github.event.inputs.package == 'camaro-ts' || github.event.inputs.package == 'both'
+        working-directory: ts
+        run: npm ci
+
+      - name: Check camaro-ts version matches the tag
+        if: github.event_name == 'push' && startsWith(github.ref_name, 'camaro-ts-v')
+        working-directory: ts
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#camaro-ts-v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match ts/package.json version $PKG_VERSION"
+            exit 1
+          fi
+
+      - name: Publish camaro-ts to npm
+        if: (github.event_name == 'push' && startsWith(github.ref_name, 'camaro-ts-v')) || github.event.inputs.package == 'camaro-ts' || github.event.inputs.package == 'both'
+        working-directory: ts
         run: |
           if node -e "process.exit(/-/.test(require('./package.json').version) ? 0 : 1)"; then
             echo "Prerelease version; publishing with dist-tag: next"

@@ -1,8 +1,14 @@
 {
 	"name": "camaro-ts",
 	"version": "6.7.4",
-	"private": true,
 	"description": "TypeScript implementation of camaro",
+	"homepage": "https://github.com/tuananh/camaro",
+	"bugs": "https://github.com/tuananh/camaro/issues",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/tuananh/camaro.git",
+		"directory": "ts"
+	},
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"exports": {
@@ -26,9 +32,19 @@
 	"engines": {
 		"node": ">= 20.x"
 	},
+	"keywords": [
+		"xpath",
+		"json",
+		"transform",
+		"xml",
+		"parser",
+		"xml2json",
+		"typescript"
+	],
+	"author": "Tuan Anh Tran <me@tuananh.org> (https://tuananh.org)",
+	"license": "MIT",
 	"devDependencies": {
 		"tape": "^5.4.0",
 		"typescript": "^7.0.2"
-	},
-	"license": "MIT"
+	}
 }
