@@ -688,14 +688,6 @@ function childNodes(node: XmlNode): XmlNode[] {
 	return node.type === 'element' || node.type === 'document' ? node.children : [];
 }
 
-/** Visit every descendant of `node`, materialising items only for matches. */
-function collectDescendantMatches(node: XmlNode, test: string, out: XPathItem[]): void {
-	for (const child of node.children) {
-		if (child.type === 'element' && matchesName(child.name, test)) out.push(nodeItem(child));
-		collectDescendantMatches(child, test, out);
-	}
-}
-
 function allDescendants(node: XmlNode): XmlNode[] {
 	const result: XmlNode[] = [];
 	const visit = (parent: XmlNode): void => {
@@ -927,17 +919,6 @@ function applyPredicates(items: XPathItem[], predicates: Predicate[], context: X
 
 function applyStep(items: XPathItem[], step: Step, context: XPathContext): XPathItem[] {
 	const result: XPathItem[] = [];
-	if (step.predicates.length === 0 && step.axis === 'child' && step.test.kind === 'name') {
-		const test = step.test.name;
-		for (const item of items) {
-			const node = item.kind === 'attribute' ? item.attribute.owner : item.node;
-			if (node.type !== 'element' && node.type !== 'document') continue;
-			for (const child of node.children) {
-				if (child.type === 'element' && matchesName(child.name, test)) result.push(nodeItem(child));
-			}
-		}
-		return dedupe(result).sort((a, b) => a.order - b.order);
-	}
 	for (const item of items) {
 		const candidates = axisItems(item, step.axis).filter((candidate) => matchesTest(candidate, step.test));
 		const filtered = applyPredicates(candidates, step.predicates, context);
@@ -961,39 +942,7 @@ function evalNodeSet(expression: Expression, context: XPathContext): XPathItem[]
 				current = [context.item];
 			}
 
-			for (let index = 0; index < expression.steps.length; index++) {
-				const step = expression.steps[index];
-				const next = expression.steps[index + 1];
-				if (
-					next !== undefined &&
-					step.axis === 'descendant-or-self' &&
-					step.test.kind === 'node' &&
-					step.predicates.length === 0 &&
-					next.axis === 'child' &&
-					next.test.kind === 'name' &&
-					next.predicates.length === 0
-				) {
-					// `//name` — avoid materialising an item for every descendant;
-					// only the matching children need one.
-					let allNodes = true;
-					for (const item of current) {
-						if (item.kind !== 'node') {
-							allNodes = false;
-							break;
-						}
-					}
-					if (allNodes) {
-						const result: XPathItem[] = [];
-						for (const item of current) {
-							collectDescendantMatches((item as { kind: 'node'; node: XmlNode }).node, next.test.name, result);
-						}
-						current = dedupe(result).sort((a, b) => a.order - b.order);
-						index++;
-						continue;
-					}
-				}
-				current = applyStep(current, step, context);
-			}
+			for (const step of expression.steps) current = applyStep(current, step, context);
 			return current;
 		}
 
