@@ -37,7 +37,7 @@ export interface XmlDocument extends XmlNode {
 
 export type XmlElement = XmlNode & { type: 'element' };
 
-interface ParseState {
+export interface ParseState {
 	source: string;
 	position: number;
 	order: number;
@@ -57,7 +57,7 @@ const EMPTY_ATTRIBUTES: XmlAttribute[] = [];
 const EMPTY_CHILDREN: XmlNode[] = [];
 
 // Whitespace lookup table used by the hot character-scanning loops.
-const XML_WHITESPACE = new Uint8Array(128);
+export const XML_WHITESPACE = new Uint8Array(128);
 XML_WHITESPACE[0x20] = 1; // space
 XML_WHITESPACE[0x09] = 1; // tab
 XML_WHITESPACE[0x0a] = 1; // newline
@@ -125,7 +125,7 @@ function appendChild(parent: XmlNode, child: XmlNode): void {
 	parent.children.push(child);
 }
 
-function decodeEntities(raw: string): string {
+export function decodeEntities(raw: string): string {
 	let output = '';
 	let index = 0;
 
@@ -173,7 +173,7 @@ function decodeEntities(raw: string): string {
 	return output;
 }
 
-function skipWhitespace(state: ParseState): void {
+export function skipWhitespace(state: ParseState): void {
 	const source = state.source;
 	let position = state.position;
 	while (position < source.length) {
@@ -188,7 +188,7 @@ function skipWhitespace(state: ParseState): void {
  * Scan an XML name and validate it in the same pass. Returns null for invalid
  * names, which makes the surrounding document malformed (as pugixml does).
  */
-function readName(state: ParseState): string | null {
+export function readName(state: ParseState): string | null {
 	const source = state.source;
 	const start = state.position;
 
@@ -225,7 +225,7 @@ function skipUntil(state: ParseState, terminator: string): boolean {
 	return true;
 }
 
-function skipDeclaration(state: ParseState): boolean {
+export function skipDeclaration(state: ParseState): boolean {
 	// Handles <!DOCTYPE ...> including an internal subset and quoted values.
 	let depth = 0;
 	let quote = '';

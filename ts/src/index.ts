@@ -8,6 +8,7 @@
 import { parseXml, prettyPrintValue, toJsonValue } from './xml';
 import { createDocumentContext } from './xpath';
 import { evaluateTemplate, parseTemplate } from './template';
+import { compileStreamPlan, StreamPlan, streamTransform } from './stream';
 
 export type XmlInput = string | Uint8Array | ArrayBuffer;
 
@@ -85,6 +86,17 @@ function xmlText(xml: XmlInput): string {
 }
 
 const templateCache = new Map<string, ReturnType<typeof parseTemplate>>();
+const streamPlanCache = new WeakMap<object, StreamPlan | null>();
+
+function compileOrCache(template: object): StreamPlan | null {
+	let plan = streamPlanCache.get(template);
+	if (plan !== undefined) return plan;
+
+	const parsedTemplate = parseTemplateJson(template);
+	plan = parsedTemplate ? compileStreamPlan(parsedTemplate) : null;
+	streamPlanCache.set(template, plan);
+	return plan;
+}
 
 function parseTemplateJson(template: object): ReturnType<typeof parseTemplate> {
 	// Upstream camaro serialises the template to JSON before crossing into the
@@ -106,6 +118,12 @@ function parseTemplateJson(template: object): ReturnType<typeof parseTemplate> {
 export async function transform<const T>(xml: XmlInput, template: T): Promise<TransformResult<T>> {
 	validateXml(xml);
 	validateTemplate(template);
+
+	const streamPlan = compileOrCache(template);
+	if (streamPlan) {
+		const result = streamTransform(xmlText(xml), streamPlan);
+		return (result === null ? {} : result) as TransformResult<T>;
+	}
 
 	const parsedTemplate = parseTemplateJson(template);
 	if (!parsedTemplate) return {} as TransformResult<T>;

@@ -130,7 +130,7 @@ function evaluateArray(template: TemplateArray, context: XPathContext): Evaluati
 /* Simple navigation fast paths                                               */
 /* -------------------------------------------------------------------------- */
 
-interface NavPath {
+export interface NavPath {
 	segments: string[];
 	attribute: string | null;
 }
@@ -139,7 +139,7 @@ function isAsciiAlphaNumeric(char: string): boolean {
 	return /[A-Za-z0-9]/.test(char);
 }
 
-function isSimpleNavPath(path: string): boolean {
+export function isSimpleNavPath(path: string): boolean {
 	if (path.length === 0) return false;
 
 	for (const char of path) {
@@ -154,7 +154,7 @@ function isSimpleNavPath(path: string): boolean {
 	return true;
 }
 
-function parseNavPath(path: string): NavPath | null {
+export function parseNavPath(path: string): NavPath | null {
 	const segments: string[] = [];
 	let attribute: string | null = null;
 	let start = path.startsWith('/') ? 1 : 0;
@@ -234,7 +234,7 @@ function simpleStringValue(path: NavPath, item: XPathItem): string {
  * parses a leading numeric prefix and defaults to 0. It is intentionally more
  * lenient than the XPath number() function.
  */
-function asDouble(value: string): number {
+export function asDouble(value: string): number {
 	const parsed = Number.parseFloat(value);
 	return Number.isNaN(parsed) ? 0 : parsed;
 }
