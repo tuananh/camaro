@@ -63,10 +63,11 @@ XML_WHITESPACE[0x09] = 1; // tab
 XML_WHITESPACE[0x0a] = 1; // newline
 XML_WHITESPACE[0x0d] = 1; // carriage return
 
-// Lookup tables for XML names. A single array lookup replaces the several
-// comparisons that were previously executed per name character.
+// Lookup tables for XML names. NAME_END only needs codes 0..64: the scan loop
+// treats anything above 64 as a name character (letters, '_', non-ASCII), so it
+// never consults the table for those.
 const NAME_START = new Uint8Array(128);
-const NAME_END = new Uint8Array(128);
+const NAME_END = new Uint8Array(65);
 
 for (let code = 0; code < 128; code++) {
 	const start =
@@ -87,7 +88,7 @@ for (let code = 0; code < 128; code++) {
 		code === 0x3f; // ?
 
 	NAME_START[code] = start ? 1 : 0;
-	NAME_END[code] = stop || !char ? 1 : 0;
+	if (code < 65) NAME_END[code] = stop || !char ? 1 : 0;
 }
 
 function makeNode(
@@ -198,7 +199,7 @@ export function readName(state: ParseState): string | null {
 
 	let position = start + 1;
 	code = source.charCodeAt(position);
-	while (code >= 128 || NAME_END[code] === 0) {
+	while (code > 64 || NAME_END[code] === 0) {
 		position++;
 		code = source.charCodeAt(position);
 	}
@@ -221,7 +222,7 @@ export function skipName(state: ParseState): boolean {
 
 	let position = start + 1;
 	code = source.charCodeAt(position);
-	while (code >= 128 || NAME_END[code] === 0) {
+	while (code > 64 || NAME_END[code] === 0) {
 		position++;
 		code = source.charCodeAt(position);
 	}
