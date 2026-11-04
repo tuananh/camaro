@@ -367,7 +367,7 @@ export function parseXml(source: string): XmlDocument | null {
 				closeEnd !== -1 &&
 				current.type === 'element' &&
 				closeEnd - closeStart === current.name.length &&
-				source.startsWith(current.name, closeStart)
+				source.indexOf(current.name, closeStart) === closeStart
 			) {
 				state.position = closeEnd + 1;
 				stack.pop();
